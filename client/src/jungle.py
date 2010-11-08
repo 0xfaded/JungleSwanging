@@ -4,7 +4,8 @@ from OpenGL.GL import *
 
 import renderable
 import pygame
-import pymunk
+
+from Box2D import *
 
 
 class Jungle(renderable.Renderable):
@@ -18,44 +19,64 @@ class Jungle(renderable.Renderable):
   def __init__(self, size):
     renderable.Renderable.__init__(self)
 
-    self.size = (float(size[0]), float(size[1]))
+    self.size = b2Vec2(size)
     w, h = self.size
 
-    f_body = pymunk.Body(pymunk.inf, pymunk.inf)
-    self.floor = pymunk.Segment(f_body, (-w/2, 0), (w/2, 0), 0.0)
-    self.floor.friction   = self.floor_friction
-    self.floor.elasticity = self.floor_elasticity
-    self.floor.collision_type = 1
+    self.floor_points = [(w/2,-h/2),(-w/2,-h/2)]
 
-    lw_body = pymunk.Body(pymunk.inf, pymunk.inf)
-    self.l_wall = pymunk.Segment(lw_body, (-w/2, h), (-w/2, 0), 0.0)
-    self.l_wall.friction   = self.wall_friction
-    self.l_wall.elasticity = self.wall_elasticity
+    self.floorShapeDef = b2EdgeChainDef()
+    self.floorShapeDef.setVertices(self.floor_points)
+    self.floorShapeDef.isALoop = False
 
-    rw_body = pymunk.Body(pymunk.inf, pymunk.inf)
-    self.r_wall = pymunk.Segment(rw_body, (w/2, h), (w/2, 0), 0.0)
-    self.r_wall.friction   = self.wall_friction
-    self.r_wall.elasticity = self.wall_elasticity
+    self.floor = None
 
-  def add_to_space(self, space, at):
-    space.add_static(self.floor)
-    space.add_static(self.l_wall)
-    space.add_static(self.r_wall)
+    self.test_points = [(5, 0), (1,2), (-5, 0)]
+
+    self.testShapeDef = b2PolygonDef()
+    self.testShapeDef.setVertices(self.test_points)
+    self.testShapeDef.density = 1
+    self.testShapeDef.friction = 0.3
+
+    self.test = None
+
+    
+  def add_to_world(self, world, at):
+    bodyDef = b2BodyDef()
+    bodyDef.position = at
+    bodyDef.userData = 'abc'
+
+    self.floor = world.CreateBody(bodyDef)
+    self.floor.CreateShape(self.floorShapeDef)
+
+    self.test = world.CreateBody(bodyDef)
+    self.test.CreateShape(self.testShapeDef)
 
   def render(self):
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
     glColor3f(0, 1, 0)
 
-    for shape in [self.r_wall, self.l_wall, self.floor]:
+    # Calculate rendering coords
+    rot = b2Mat22(self.floor.angle)
+    off = self.floor.position
 
-      body = shape.body
-      pv1 = body.position + shape.a.cpvrotate(body.rotation_vector)
-      pv2 = body.position + shape.b.cpvrotate(body.rotation_vector)
+    points = map(lambda x: b2Mul(rot,x) + off, self.floor_points)
 
-      glBegin(GL_LINES)
+    glBegin(GL_LINES)
+    for (x, y) in points:
 
-      glVertex3f(pv1.x, pv1.y, 0)
-      glVertex3f(pv2.x, pv2.y, 0)
+      glVertex3f(x, y, 0)
 
-      glEnd()
+    glEnd()
+
+    rot = b2Mat22(self.test.angle)
+    off = self.test.position
+
+    points = map(lambda x: b2Mul(rot,x) + off, self.test_points)
+
+    glBegin(GL_POLYGON)
+    for (x, y) in points:
+
+      glVertex3f(x, y, 0)
+
+    glEnd()
 
