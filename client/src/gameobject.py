@@ -11,3 +11,4 @@ class GameObject(Renderable):
 
   def on_contact_remove(self, contact):
     return
+

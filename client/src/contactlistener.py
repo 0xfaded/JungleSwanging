@@ -41,6 +41,9 @@ class Contact(object):
     else:
       return (b,a)
 
+  def __lt__(self, other):
+    return self.id() < other.id()
+
   def same_shapes(self, other):
     return \
             (self.shape1.this == other.shape1.this \
@@ -55,27 +58,32 @@ class ContactListener(b2ContactListener):
     self.contacts = []
     self.separates = []
 
-    self.live = {}
+    self.live = []
 
   def clear_buffer(self):
     self.contacts = []
     self.separates = []
+    self.live = []
 
   def Add(self, contact):
     contact = Contact(contact)
 
     self.contacts.append(contact)
-    self.live[contact.id()] = contact
+    self.live.append(contact)
 
     self.on_add(contact)
 
   def Remove(self, contact):
     contact = Contact(contact)
-
     self.separates.append(contact)
-    self.live.pop(contact.id())
-
     self.on_remove(contact)
+
+  def Persist(self, contact):
+    contact = Contact(contact)
+    self.live.append(contact)
+
+  def Result(self, contactResult):
+    print contactResult
 
   def on_add(self, contact):
     b1 = contact.body1
@@ -119,7 +127,7 @@ class ContactListener(b2ContactListener):
     class2: Type or Object
     """
 
-    return self._filter(self.live.values(), class1, class2)
+    return self._filter(self.live, class1, class2)
 
   def get_contacts(self, class1 = None, class2 = None):
     """

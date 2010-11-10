@@ -13,6 +13,7 @@ from OpenGL.GLU import *
 # Monkeys Imports
 from monkey import * 
 from jungle import *
+from grab import *
 
 from contactlistener import *
 
@@ -105,8 +106,16 @@ clock = pygame.time.Clock()
 monkey  = Monkey()
 jungle  = Jungle((20,10))
 
+grab1   = Grab(3)
+grab2   = Grab(3)
+grab3   = Grab(3)
+
+
 jungle.add_to_world(world, (0,0))
 monkey.add_to_world(world, (0,3))
+
+grab1.add_to_world(world, (-10,1))
+grab2.add_to_world(world, (5,-1))
 
 def crop_angle(angle):
   """Take an arbitary angle, and return that angle between pi and -pi"""
@@ -116,7 +125,10 @@ fps = 30
 while 1:
   deltat = clock.tick(fps)
 
+  events = []
   for event in pygame.event.get():
+    events.append(event)
+
     if event.type == pygame.QUIT:
       sys.exit(0)
     elif event.type == pygame.KEYDOWN:
@@ -139,10 +151,16 @@ while 1:
 
   debugdraw.init_draw()
 
-  monkey.control(contact_listener, keys)
+  world.Step(1.0/fps, 10, 8)
+
+  # Read contact information, and then clear the buffers. Contacts can be
+  # Produced by world updates through functions like SetFixedRotation.
+  # Therefore we clear the contacts immediatly after reading.
+  monkey.read_contacts(contact_listener)
   contact_listener.clear_buffer()
 
-  world.Step(1.0/fps, 10, 8)
+  monkey.control(keys, events)
+
   debugdraw.draw()
 
   dir(world)
