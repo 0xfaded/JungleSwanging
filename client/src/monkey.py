@@ -11,6 +11,8 @@ from Box2D import *
 from gameobject import *
 from grab import *
 
+import copy
+
 class Monkey(GameObject):
 
   category = 1
@@ -19,6 +21,9 @@ class Monkey(GameObject):
 
   # Note additonal friction is calculated separately whilst on ground
   friction   = 3
+
+  max_landing_impulse = 30
+  max_knock_impulse   = 10
 
   max_ground_velocity = 5
 
@@ -40,7 +45,7 @@ class Monkey(GameObject):
     self.boxDef.restitution = 0.5
 
     self.circleDef = b2CircleDef()
-    self.circleDef.radius = 0.39
+    self.circleDef.radius = 0.41
     self.circleDef.density = 1
     self.circleDef.friction = self.friction
     self.circleDef.restitution = 0.5
@@ -65,9 +70,6 @@ class Monkey(GameObject):
     self.controlled = True
 
     self.direction = 1
-
-    self.last_contacts = []
-    self.last_air_velocity = b2Vec2(0,0)
 
     self.state = 'none'
 
@@ -97,41 +99,101 @@ class Monkey(GameObject):
 
     self.body.SetFixedRotation(True)
 
+  def set_contact_callbacks(self, contact_listener):
+    contact_listener.add_callback(self.on_platform_pre_land, 'Add',
+                                  self.foot_shape, str)
+
+    contact_listener.add_callback(self.on_platform_land, 'Result',
+                                  self.foot_shape, str)
+
+    contact_listener.add_callback(self.on_platform_leave, 'Remove',
+                                  self.foot_shape, str)
+
+    contact_listener.add_callback(self.on_hit, 'Result', self.body)
+
+    contact_listener.add_callback(self.on_grab_touch, 'Live',
+                                  self.shoulder_shape, Grab)
+
+    contact_listener.add_callback(self.on_grab_leave, 'Remove',
+                                  self.shoulder_shape, Grab)
+
+  def on_platform_land(self, result):
+    # For movement calculations, if we are in a grounded state we
+    # need to store the best suiting platform contact. We choose
+    # the most horizontal platform as the best suiting
+
+    if result.normalImpulse <= self.max_landing_impulse:
+      up = b2Vec2(0, 1)
+      dot = b2Dot(result.normal, up)
+
+      # Reject any platform at an angle greater than 60 degrees
+      if dot > 0.5:
+        if self.platform_contact == None:
+          self.platform_contact = copy.copy(result)
+        else:
+          old_dot = b2Dot(self.platform_contact.normal, up)
+
+          if dot > old_dot:
+            self.platform_contact = copy.copy(result)
+
+  def on_platform_leave(self, contact):
+    if self.platform_contact == None:
+      return
+
+    if contact.shape2.this == self.platform_contact.shape2.this:
+      self.platform_contact = None
+
+  def on_grab_touch(self, contact):
+    # Maintain the closest grab point
+    if self.grab_contact == None:
+      self.grab_contact = copy.copy(contact)
+
+    else:
+      shoulder_pos = self.body.GetWorldPoint(self.shoulder_shape.localPosition)
+
+      new_pos  = contact.shape2.GetBody().position
+      old_pos  = self.grab_contact.shape2.GetBody().position
+
+      new_dist = (shoulder_pos - new_pos).LengthSquared() 
+      old_dist = (shoulder_pos - old_pos).LengthSquared() 
+      if new_dist < old_dist:
+        self.grab_contact = copy.copy(contact)
+
+  def on_grab_leave(self, contact):
+    if self.grab_contact == None:
+      return
+
+    if contact.shape2.this == self.grab_contact.shape2.this:
+      self.grab_contact = None
+
+
+  def on_hit(self, result):
+    if result.shape1.this == self.foot_shape.this and \
+        isinstance(result.shape2.GetBody().userData, str):
+
+      up = b2Vec2(0,1)
+      monkey_up = b2Mul(b2Mat22(self.body.angle), up)
+
+      max_impulse = self.max_landing_impulse * (b2Dot(monkey_up, up) + 0.1)
+      impulse = result.normalImpulse
+      if impulse > max_impulse:
+        self.controlled = False
+      else:
+        self.controlled = True
+
+    else:
+      max_impulse = self.max_knock_impulse
+      impulse = math.hypot(result.normalImpulse, result.tangentImpulse)
+
+      if impulse > max_impulse:
+        self.controlled = False
+
+
   def read_contacts(self, contact_listener):
-    # Find the most horizontal platform contact and assign it to the current
-    # Platform
+    return
     best_dot = -100000
     down = b2Vec2(0, -1)
 
-    self.platform_contact = None
-    for contact in contact_listener.get_live(self, str):
-      print - contact.normal * contact.velocity.Length()
-      dot = b2Dot(contact.normal, down)
-
-      # Contacts are added in time order. If two contacts are equal,
-      # yet one contact is more recent than the previous, use the
-      # more recent one. Hence <= instead of <
-      if best_dot <= dot:
-        best_dot = dot
-        self.platform_contact = contact
-
-    # if contact is two steep ignore (currently at pi/3)
-    if best_dot < 0.5:
-      self.platform_contact = None
-
-    # Find closest grab point
-    shoulder_pos = self.body.GetWorldPoint(self.shoulder_shape.localPosition)
-
-    self.grab_contact = None
-    best_dist = 10000000
-    for contact in contact_listener.get_live(self, Grab):
-      if contact.shape1.this != self.shoulder_shape.this:
-        continue
-
-      dist = (shoulder_pos - contact.body2.position).Length() 
-      if dist <= best_dist:
-        best_dist = dist
-        self.grab_contact = contact
 
   def control(self, keys, events):
     self.keys = keys
@@ -140,19 +202,25 @@ class Monkey(GameObject):
     force = b2Vec2(0, 0)
     impulse = b2Vec2(0, 0)
 
+    key_basis  = b2Vec2(0,0)
+    jump_basis = b2Vec2(0,0)
+
     # Left Right movement
     if keys[K_LEFT]:
-      force += b2Vec2(-1, 0)
+      key_basis += b2Vec2(-1, 0)
     if keys[K_RIGHT]:
-      force += b2Vec2(1, 0)
-
-    if keys[K_UP]:
-      impulse += b2Vec2(0, 1)
+      key_basis += b2Vec2(1, 0)
 
     for event in events:
       if event.type == pygame.KEYDOWN:
         if event.key == K_SPACE:
           self._attempt_grab()
+        if event.key == K_UP:
+          jump_basis += b2Vec2(0, 1)
+
+    # Prevent ourselves from getting stuck with our feet not touching a platform
+    if self.body.linearVelocity.Length() < 0.01:
+      self.controlled = True
 
     # Check if the monkey has returned to the ground
     #   If velocity is reasonable, return to standing state
@@ -160,69 +228,49 @@ class Monkey(GameObject):
     if self._is_hanging():
       if self.state != 'hanging':
         self.state = 'hanging'
+        self._set_controlled(True)
         print self.state
-        self._set_controlled()
 
     elif self._is_grounded():
+      force   += self._calc_platform_force(key_basis)  * 50
+      impulse += jump_basis * 20
+
       if self.state != 'grounded':
         self.state = 'grounded'
         print self.state
 
-        # Normal vector points from shape1 to shape2.
-        #   shape1 = monkey
-        #   shape2 = platform
-        # So we reverse the normal
-        uprightness = self._uprightness(-self.platform_contact.normal)
-        upright_threshold = uprightness * 5 + 1
-        if self.body.linearVelocity.Length() < upright_threshold:
+        # _set_upright() will perserve linear velocity. This makes sense
+        # if the user continues holding the key in the desired direction,
+        # however if the user stops, then the monkey will land and go
+        # continue sliding until frition takes over. 
+        # Therefore we need to calculate the friction manually and subtract
+        # it after uprighting the monkey
+
+        if (self.controlled):
+          vel_dot = b2Dot(key_basis, self.body.linearVelocity)
+          if vel_dot == 0:
+            vel_scale = 0.5
+          elif vel_dot > 0:
+            vel_scale = 1
+          else:
+            vel_scale = 0.25
+
+          i, j = self.platform_contact.normal
+          perp = b2Vec2(j, -i)
+          perp_vel = b2Dot(self.body.linearVelocity, perp) * perp
+
           self._set_upright()
-
-          # When we land hard we create a lot of friction and therefore
-          # lose a lot of speed. This feels good if we want to stop, but
-          # if the user has their key down in the same direction it feels
-          # wrong. To combat this, after landing, if the user is holding
-          # down the key in the direction restore their linear velocity
-
-          # is the user holding down the key in the same direction`
-          if b2Dot(force, self.last_air_velocity) > 0:
-            print 'nooo'
-            # reference vector perpendicular to normal
-            (i, j) = self.platform_contact.normal
-            perp = b2Vec2(-j, i)
-            proj_vel = b2Dot(perp, self.last_air_velocity) * perp
-
-            # What velocity wasn't saved must be converted to some
-            # form of resistance force
-            #resistance = self.last_air_velocity - proj_vel
-            #proj_mag = proj_vel.Length() * self.friction
-            #resistance_mag = proj_vel.Length()
-
-            # Note, cant be zero as "force dot last_vel > 0"
-            #ratio = proj_mag / (resistance_mag + proj_mag)
-            ratio = 0.9
-            proj_vel *= ratio
-
-            self.body.linearVelocity = proj_vel
-        else:
-          self._set_uncontrolled()
+          self.body.linearVelocity -= (1 - vel_scale) * perp_vel
 
     elif not self._is_grounded():
       if self.state != 'airbourne':
         self.state = 'airbourne'
         print self.state
+        self._set_controlled(False)
 
     # Store air velocity for restoration purposes
     if not self._is_grounded():
       self.last_air_velocity = self.body.linearVelocity
-
-
-    if self.platform_contact == None:
-      force *= 0
-      impulse *= 0
-    else:
-      force = self._calc_platform_force(force)
-      force *= 30
-      impulse *= 10
 
     # Apply Force
     if force.Length() != 0:
@@ -248,23 +296,22 @@ class Monkey(GameObject):
 
     jointDef = b2DistanceJointDef()
     jointDef.body1 = self.body
-    jointDef.body2 = self.grab_contact.body2
+    jointDef.body2 = self.grab_contact.shape2.GetBody()
     jointDef.frequencyHz = 5
     jointDef.dampingRatio = 5
 
     jointDef.localAnchor1 = self.shoulder_shape.localPosition
     jointDef.localAnchor2 = (0,0)
 
-    shoulder_pos = self.body.GetWorldPoint(self.shoulder_shape.localPosition)
-    disp = self.grab_contact.body2.position - shoulder_pos
-    jointDef.length = disp.Length()
     jointDef.length = 2
     
     self.grab_joint = world.CreateJoint(jointDef)
 
 
-  def on_contact_add(self, contact):
-    if contact.velocity.Length() < 5:
+  def on_platform_pre_land(self, contact):
+    normal_vel = b2Dot(contact.velocity, contact.normal) * contact.normal
+    print normal_vel
+    if normal_vel.Length() < 10:
       contact.shape1.restitution = 0
     else:
       contact.shape1.restitution = 0.5
@@ -322,12 +369,8 @@ class Monkey(GameObject):
       self.fixedRotation = controlled
 
   def _set_upright(self):
-    # If we are already in a controlled state, do nothing
-    # Otherwise set the monkey in a controlled upright state
-
-    if self._is_controlled():
-      return
-
+    # Note: Do not mess with the engine until the end. Doing so will
+    #       trigger callbacks, destroying the integrety of our state
     # Calculate pos above current foot location
     foot_pos = self.foot_shape.localPosition
     rot_mat  = b2Mat22(self.body.angle)
@@ -336,12 +379,19 @@ class Monkey(GameObject):
 
     body_pos = foot_pos - self.foot_shape.localPosition
 
+    # Remove velocity perpendicular to platform
+    perp_vel = b2Dot(self.platform_contact.normal, self.body.linearVelocity)
+    perp_vel *= self.platform_contact.normal
+
+    # Update the engine
     self.body.position = body_pos
+    self.body.linearVelocity -= perp_vel
 
     # Upright the monkey
     self.body.angle = 0
 
-    self._set_controlled()
+
+    self._set_controlled(True)
 
   def _is_grounded(self):
     return self.platform_contact != None

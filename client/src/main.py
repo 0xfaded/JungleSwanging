@@ -14,6 +14,9 @@ from OpenGL.GLU import *
 from monkey import * 
 from jungle import *
 from grab import *
+from powerup import *
+
+from map import Map
 
 from contactlistener import *
 
@@ -104,18 +107,34 @@ world.SetContactListener(contact_listener)
 clock = pygame.time.Clock()
 
 monkey  = Monkey()
-jungle  = Jungle((20,10))
 
 grab1   = Grab(3)
 grab2   = Grab(3)
-grab3   = Grab(3)
 
+powerup1 = PowerUp(0.25)
 
-jungle.add_to_world(world, (0,0))
 monkey.add_to_world(world, (0,3))
 
-grab1.add_to_world(world, (-10,1))
-grab2.add_to_world(world, (5,-1))
+powerup1.add_to_world(world, contact_listener, (1.5,6))
+
+map = Map()
+map.read('map2.svg')
+
+for platform in map.platforms:
+    platform.friction = 0.3
+
+
+    bodyDef = b2BodyDef()
+    bodyDef.userData = 'abc'
+
+    test = world.CreateBody(bodyDef)
+    test.CreateShape(platform)
+
+
+#grab1.add_to_world(world, (-10,1))
+grab2.add_to_world(world, (17,-6))
+
+monkey.set_contact_callbacks(contact_listener)
 
 def crop_angle(angle):
   """Take an arbitary angle, and return that angle between pi and -pi"""
@@ -146,18 +165,14 @@ while 1:
   glScale(zoom, zoom, 1)
 
   # center camera on monkey
-  #mx, my = monkey.body.body.position
-  #glTranslate(-mx, -my, 0)
+  mx, my = monkey.body.position
+  glTranslate(-mx, -my, 0)
 
   debugdraw.init_draw()
 
   world.Step(1.0/fps, 10, 8)
 
-  # Read contact information, and then clear the buffers. Contacts can be
-  # Produced by world updates through functions like SetFixedRotation.
-  # Therefore we clear the contacts immediatly after reading.
-  monkey.read_contacts(contact_listener)
-  contact_listener.clear_buffer()
+  powerup1.update(world, contact_listener)
 
   monkey.control(keys, events)
 

@@ -30,15 +30,6 @@ class Jungle(renderable.Renderable):
 
     self.floor = None
 
-    self.test_points = [(5, 0), (1,2), (-5, 0)]
-
-    self.testShapeDef = b2PolygonDef()
-    self.testShapeDef.setVertices(self.test_points)
-    self.testShapeDef.density = 1
-    self.testShapeDef.friction = 0.3
-
-    self.test = None
-
     
   def add_to_world(self, world, at):
     bodyDef = b2BodyDef()
@@ -47,9 +38,6 @@ class Jungle(renderable.Renderable):
 
     self.floor = world.CreateBody(bodyDef)
     self.floor.CreateShape(self.floorShapeDef)
-
-    self.test = world.CreateBody(bodyDef)
-    self.test.CreateShape(self.testShapeDef)
 
   def render(self):
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)

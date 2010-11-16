@@ -1,227 +1,164 @@
+import copy
+from numbers import Number
+from types import FunctionType, NoneType
+
+
 from Box2D import *
 
-import traceback
-
-class Contact(object):
-  def __init__(self, contact_or_shape1 = None, shape2 = None,
-               normal = None, position = None, velocity = None):
-
-    if shape2 == None:
-      self.shape1 = contact_or_shape1.shape1
-      self.shape2 = contact_or_shape1.shape2
-
-      self.normal = contact_or_shape1.normal.copy()
-      self.position = contact_or_shape1.position.copy()
-      self.velocity = contact_or_shape1.velocity.copy()
-
-    else:
-      self.shape1 = contact_or_shape1
-      self.shape2 = shape2
-
-      self.normal = normal.copy()
-      self.position = position.copy()
-      self.velocity = velocity.copy()
-
-    self.body1 = self.shape1.GetBody()
-    self.body2 = self.shape2.GetBody()
-
-  def flip(self):
-    """
-    Returns a new Contact with the ording of the bodies switched
-    """
-    return Contact(self.shape2, self.shape1,
-                   self.normal * -1, self.position, self.velocity * -1)
-
-  def id(self):
-    a = int(self.shape1.this)
-    b = int(self.shape2.this)
-
-    if a < b:
-      return (a,b)
-    else:
-      return (b,a)
-
-  def __lt__(self, other):
-    return self.id() < other.id()
-
-  def same_shapes(self, other):
-    return \
-            (self.shape1.this == other.shape1.this \
-         and self.shape2.this == other.shape2.this) \
-      or \
-            (self.shape1.this == other.shape2.this \
-         and self.shape2.this == other.shape1.this)
-
 class ContactListener(b2ContactListener):
+  class ContactCallback(object):
+    def __init__(self, func, test, flip):
+      self.func = func
+      self.test = test
+      self.flip = flip
+
   def __init__(self):
     super(ContactListener, self).__init__()
-    self.contacts = []
-    self.separates = []
 
-    self.live = []
+    self.callbacks = {}
+    self.callbacks['Add'    ] = {}
+    self.callbacks['Remove' ] = {}
+    self.callbacks['Persist'] = {}
+    self.callbacks['Result' ] = {}
 
-  def clear_buffer(self):
-    self.contacts = []
-    self.separates = []
-    self.live = []
+  def add_callback(self, func, events, arg1, arg2 = None):
+    """
+    func: callback function
+
+    Events in ['Add', 'Remove', 'Persist', 'Result', 'Live']
+
+    'Live' is a special event that listens to both 'Add' and 'Persist'
+
+    Creates a callback to be called if arg1 and arg2 match the
+    shapes involved in the collision
+
+    An arg can be one of several types
+
+    b2Shape
+      Return True if shape is present in collision
+    b2Body
+      Return True if body is present in collision
+    python type (new style class object)
+      Return True if body userdata is of this type
+    None
+      If second arg is None, then we don't consider it for the test
+    function
+      A user defined function that takes a shape as an argument
+
+    The return is a tuple of tests. The first tests checks for
+    the presence of arg1 and arg2. The second checks whether
+    or not arg1 and arg2 are in order. If arg1 and arg2 are out
+    of order, the contact will be flipped with all vectors directions
+    reversed
+    """
+
+    if isinstance(events, str):
+      events = [events]
+
+    # Filter for duplicates
+    events = set(events)
+    if 'Live' in events:
+      events = events | set(['Add', 'Persist'])
+      events.remove('Live')
+
+    callback = self.ContactCallback(func, *self._create_test(arg1, arg2))
+    for event in events:
+      self.callbacks[event][id(callback)] = callback
+
+    return id(callback)
+  
+  def remove_callback(self, callback_id, events):
+    if isinstance(events, str):
+      events = [events]
+
+    # Filter for duplicates
+    events = set(events)
+    if 'Live' in events:
+      events = events | set(['Add', 'Persist'])
+      events.remove('Live')
+
+    for event in events:
+      if self.callbacks[event].has_key(callback_id):
+        self.callbacks[event].pop(callback_id)
 
   def Add(self, contact):
-    contact = Contact(contact)
-
-    self.contacts.append(contact)
-    self.live.append(contact)
-
-    self.on_add(contact)
+    self._callback(self.callbacks['Add'], contact)
 
   def Remove(self, contact):
-    contact = Contact(contact)
-    self.separates.append(contact)
-    self.on_remove(contact)
+    self._callback(self.callbacks['Remove'], contact)
 
   def Persist(self, contact):
-    contact = Contact(contact)
-    self.live.append(contact)
+    self._callback(self.callbacks['Persist'], contact)
 
   def Result(self, contactResult):
-    print contactResult
+    self._callback(self.callbacks['Result'], contactResult)
 
-  def on_add(self, contact):
-    b1 = contact.body1
-    b2 = contact.body2
-    if b1.userData != None and not isinstance(b1.userData, str):
-      b1.userData.on_contact_add(contact)
+  def _callback(self, callbacks, contact):
+    flipped = self._flip_contact(contact)
+    for callback in callbacks.values():
+      if callback.test(contact):
+        if callback.flip(contact):
+          callback.func(flipped)
+        else:
+          callback.func(contact)
 
-    if b2.userData != None and not isinstance(b2.userData, str):
-      b2.userData.on_contact_add(contact.flip())
+  def _flip_contact(self, contact):
+    # Careful, this is a shallow copy
+    flipped = copy.copy(contact)
 
-  def on_remove(self, contact):
-    b1 = contact.body1
-    b2 = contact.body2
-    if b1.userData != None and not isinstance(b1.userData, str):
-      b1.userData.on_contact_remove(contact)
+    tmp = flipped.shape1
+    flipped.shape1 = flipped.shape2
+    flipped.shape2 = tmp
 
-    if b2.userData != None and not isinstance(b2.userData, str):
-      b2.userData.on_contact_remove(contact.flip())
+    for name, attribute in contact.__dict__.items():
+      if isinstance(attribute, Number) or isinstance(attribute, b2Vec2):
+        # Vectors and numbers are located on the b2Contact struct, therefore
+        # it is save to modify them in place
+        flipped.__dict__[name] *= -1
 
-  def get_live(self, class1 = None, class2 = None):
-    """
-    Returns a list of live (active) contacts
-    If class1 is a type (ie a class name), then the contacts are filtered
-      such that at least one body is of type class1
-    if class1 is an object (eg a new style class that derives from obj),
-      then the contacts will be filtered such that atleast one body IS
-      class1 (eg equal pointer values)
+    return flipped
 
-    if class2 is defined, then the above checks are performed such that
-      both class1 and class2 are present
 
-    The resulting contacts are then reorded such that body1 is always
-      of type (or instance of) class1
+  def _create_test(self, arg1, arg2 = None):
+    cmp1 = self._create_cmp(arg1)
+    cmp2 = self._create_cmp(arg2)
 
-    If both class1 and class2 are None, a list of all buffered contacts
-      is returned
 
-    The comparisons are performed on the userData of the Box2D bodies
+    def filter_func(contact):
+      if cmp1(contact.shape1):
+        return cmp2(contact.shape2)
 
-    class1: Type or Object
-    class2: Type or Object
-    """
+      elif cmp1(contact.shape2):
+        return cmp2(contact.shape1)
 
-    return self._filter(self.live, class1, class2)
-
-  def get_contacts(self, class1 = None, class2 = None):
-    """
-    Returns a list of buffered contacts
-    If class1 is a type (ie a class name), then the contacts are filtered
-      such that at least one body is of type class1
-    if class1 is an object (eg a new style class that derives from obj),
-      then the contacts will be filtered such that atleast one body IS
-      class1 (eg equal pointer values)
-
-    if class2 is defined, then the above checks are performed such that
-      both class1 and class2 are present
-
-    The resulting contacts are then reorded such that body1 is always
-      of type (or instance of) class1
-
-    If both class1 and class2 are None, a list of all buffered contacts
-      is returned
-
-    The comparisons are performed on the userData of the Box2D bodies
-
-    class1: Type or Object
-    class2: Type or Object
-    """
-
-    return self._filter(self.contacts, class1, class2)
-
-  def get_separates(self, class1 = None, class2 = None):
-    """
-    Returns a list of buffered separates
-    If class1 is a type (ie a class name), then the separates are filtered
-      such that at least one body is of type class1
-    if class1 is an object (eg a new style class that derives from obj),
-      then the separates will be filtered such that atleast one body IS
-      class1 (eg equal pointer values)
-
-    if class2 is defined, then the above checks are performed such that
-      both class1 and class2 are present
-
-    The resulting separates are then reorded such that body1 is always
-      of type (or instance of) class1
-
-    If both class1 and class2 are None, a list of all buffered separates
-      is returned
-
-    The comparisons are performed on the userData of the Box2D bodies
-
-    class1: Type or Object
-    class2: Type or Object
-    """
-
-    return self._filter(self.separates, class1, class2)
-
-  def _filter(self, ret, class1, class2):
-    """
-    Does the magic filtering for get_contacts and get_separates
-    """
-
-    if class1 != None:
-      if isinstance(class1, type):
-        def cmp1(x):
-          return isinstance(x, class1)
       else:
-        def cmp1(x): return x is class1
+        return False
 
-      if class2 == None:
-        def filter_func(x):
-          return cmp1(x.body1.userData) or cmp1(x.body2.userData)
+    def flipper_func(contact):
+      return not cmp1(contact.shape1)
 
-      else: # class2 != None
-        if isinstance(class2, type):
-          def cmp2(x): return isinstance(x, class2)
-        else:
-          def cmp2(x): return x is class2
+    return (filter_func, flipper_func)
 
-        def filter_func(x):
-          if cmp1(x.body1.userData):
-            return cmp2(x.body2.userData)
+  def _create_cmp(self, arg):
 
-          elif cmp2(x.body1.userData):
-            return cmp1(x.body2.userData)
+    if isinstance(arg, FunctionType):
+      return arg
 
-          else:
-            return False
+    if isinstance(arg, b2Shape):
+      def cmp(contact_shape):
+        return arg.this == contact_shape.this
+    
+    elif isinstance(arg, b2Body):
+      def cmp(contact_shape):
+        return arg.this == contact_shape.GetBody().this
 
-      ret = filter(filter_func, ret)
+    elif isinstance(arg, type):
+      def cmp(contact_shape):
+        return isinstance(contact_shape.GetBody().userData, arg)
 
-      def flipper_func(x):
-        if cmp1(x.body2.userData):
-          return x.flip()
-        else:
-          return x
+    elif isinstance(arg, NoneType):
+      def cmp(contact_shape):
+        return True
 
-      ret = map(flipper_func, ret)
-
-    return ret
+    return cmp
 
