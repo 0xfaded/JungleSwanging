@@ -13,8 +13,8 @@ from monkey import *
 
 class PowerUp(GameObject):
 
-  def __init__(self, radius):
-    super(PowerUp, self).__init__()
+  def __init__(self, parent, radius):
+    super(PowerUp, self).__init__(parent)
 
     self.circleDef = b2CircleDef()
     self.circleDef.radius = radius

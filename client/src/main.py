@@ -11,7 +11,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 # Monkeys Imports
-from monkey import * 
+from monkey import *
 from jungle import *
 from grab import *
 from powerup import *
@@ -37,9 +37,9 @@ glViewport(0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1])
 # ^ +z      positive z is away from us (zero at top of screen)
 # |
 # o--> +x   x increases left to right
-# |         
+# |
 # v +y      positive y is down
-# 
+#
 # (side view):
 # o_  <--- camera
 #  \
@@ -76,10 +76,10 @@ worldAABB.upperBound = ( 100,  100)
 
 # Define the gravity vector.
 gravity = b2Vec2(0, -10)
- 
+
 # Do we want to let bodies sleep?
 doSleep = True
- 
+
 # Construct a world object, which will hold and simulate the rigid bodies.
 world = b2World(worldAABB, gravity, doSleep)
 
@@ -106,39 +106,21 @@ world.SetContactListener(contact_listener)
 
 clock = pygame.time.Clock()
 
-monkey  = Monkey()
 
-grab1   = Grab(3)
-grab2   = Grab(3)
-
-powerup1 = PowerUp(0.25)
-
-monkey.add_to_world(world, contact_listener, (0,3))
-
-powerup1.add_to_world(world, contact_listener, (1.5,6))
-
-map = Map()
+map = Map(None)
 map.read('map2.svg')
 
-for platform in map.platforms:
-    platform.friction = 0.3
+map.add_to_world(world, contact_listener, (0,0))
 
-
-    bodyDef = b2BodyDef()
-    bodyDef.userData = 'abc'
-
-    test = world.CreateBody(bodyDef)
-    test.CreateShape(platform)
-
-
-grab2.add_to_world(world, contact_listener, (17,-6))
 
 def crop_angle(angle):
   """Take an arbitary angle, and return that angle between pi and -pi"""
   return ((abs(angle) + math.pi) % (2 * math.pi)) - math.pi
 
 fps = 30
-while 1:
+active = True
+
+while active:
   deltat = clock.tick(fps)
 
   events = []
@@ -146,11 +128,11 @@ while 1:
     events.append(event)
 
     if event.type == pygame.QUIT:
-      sys.exit(0)
+      active = False
     elif event.type == pygame.KEYDOWN:
       if event.unicode == 'q':
-        sys.exit(0)
-      
+        active = False
+
   keys = pygame.key.get_pressed()
 
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
@@ -162,16 +144,16 @@ while 1:
   glScale(zoom, zoom, 1)
 
   # center camera on monkey
-  mx, my = monkey.body.position
-  glTranslate(-mx, -my, 0)
+  #mx, my = monkey.body.position
+  #glTranslate(-mx, -my, 0)
 
   debugdraw.init_draw()
 
   world.Step(1.0/fps, 10, 8)
 
-  powerup1.update(world, contact_listener)
+  #powerup1.update(world, contact_listener)
 
-  monkey.control(keys, events)
+  #monkey.control(keys, events)
 
   debugdraw.draw()
 
@@ -183,3 +165,4 @@ while 1:
 
   pygame.display.flip()
 
+pygame.quit()

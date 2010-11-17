@@ -10,6 +10,7 @@ from Box2D import *
 
 from gameobject import *
 from grab import *
+from platform import *
 
 import copy
 
@@ -27,8 +28,8 @@ class Monkey(GameObject):
 
   max_ground_velocity = 5
 
-  def __init__(self):
-    super(Monkey, self).__init__()
+  def __init__(self, parent):
+    super(Monkey, self).__init__(parent)
 
     self.t = 0
 
@@ -103,13 +104,13 @@ class Monkey(GameObject):
 
   def _set_contact_callbacks(self, contact_listener):
     contact_listener.add_callback(self.on_platform_pre_land, 'Add',
-                                  self.foot_shape, str)
+                                  self.foot_shape, Platform)
 
     contact_listener.add_callback(self.on_platform_land, 'Result',
-                                  self.foot_shape, str)
+                                  self.foot_shape, Platform)
 
     contact_listener.add_callback(self.on_platform_leave, 'Remove',
-                                  self.foot_shape, str)
+                                  self.foot_shape, Platform)
 
     contact_listener.add_callback(self.on_hit, 'Result', self.body)
 
@@ -156,8 +157,8 @@ class Monkey(GameObject):
       new_pos  = contact.shape2.GetBody().position
       old_pos  = self.grab_contact.shape2.GetBody().position
 
-      new_dist = (shoulder_pos - new_pos).LengthSquared() 
-      old_dist = (shoulder_pos - old_pos).LengthSquared() 
+      new_dist = (shoulder_pos - new_pos).LengthSquared()
+      old_dist = (shoulder_pos - old_pos).LengthSquared()
       if new_dist < old_dist:
         self.grab_contact = copy.copy(contact)
 
@@ -171,7 +172,7 @@ class Monkey(GameObject):
 
   def on_hit(self, result):
     if result.shape1.this == self.foot_shape.this and \
-        isinstance(result.shape2.GetBody().userData, str):
+        isinstance(result.shape2.GetBody().userData, Platform):
 
       up = b2Vec2(0,1)
       monkey_up = b2Mul(b2Mat22(self.body.angle), up)
@@ -244,7 +245,7 @@ class Monkey(GameObject):
         # _set_upright() will perserve linear velocity. This makes sense
         # if the user continues holding the key in the desired direction,
         # however if the user stops, then the monkey will land and go
-        # continue sliding until frition takes over. 
+        # continue sliding until frition takes over.
         # Therefore we need to calculate the friction manually and subtract
         # it after uprighting the monkey
 
@@ -292,7 +293,7 @@ class Monkey(GameObject):
       world.DestroyJoint(self.grab_joint)
       self.grab_joint = None
       return
-      
+
     if self.grab_contact == None:
       return
 
@@ -306,7 +307,7 @@ class Monkey(GameObject):
     jointDef.localAnchor2 = (0,0)
 
     jointDef.length = 2
-    
+
     self.grab_joint = world.CreateJoint(jointDef)
 
 
@@ -348,7 +349,7 @@ class Monkey(GameObject):
 
     points = map(lambda x: b2Mul(rot,x) + off, self.points)
 
-    
+
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
     glColor3f(1, 0, 0)
 

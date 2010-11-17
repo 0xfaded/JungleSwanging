@@ -1,16 +1,50 @@
 from xml.dom.minidom import parse
 from Box2D import *
 import xml
+from platform import *
+from powerup import *
+from grab import *
+from monkey import *
 
 from bezieredge import *
 
 class ParseError(Exception):
   pass
 
-class Map(object):
+class Map(GameObject):
   platforms = []
+  powerups = []
+  grabpoints = []
+  monkeys = []
+
+  def __init__(self, parent):
+    super(Map, self).__init__(parent)
+
+
+  def add_to_world(self, world, contact_listener, at):
+    for platform in self.platforms:
+      platform.add_to_world(world, contact_listener, at)
+    for powerup in self.powerups:
+      powerup.add_to_world(world, contact_listener, powerup.get_start())
+    for grabpoint in self.grabpoints:
+      grabpoint.add_to_world(world, contact_listener, grabpoint.get_start())
+    for monkey in self.monkeys:
+      monkey.add_to_world(world, contact_listener, monkey.get_start())
+
 
   def read(self, node):
+    powerup1 = PowerUp(self,0.25)
+    powerup1.set_start((1.5,6))
+    self.powerups.append(powerup1)
+
+    grab1 = Grab(self, 3)
+    grab1.set_start((17,-6))
+    self.grabpoints.append(grab1)
+
+    monkey1 = Monkey(self)
+    monkey1.set_start((0,3))
+    self.monkeys.append(monkey1)
+
     """Read a map from an svg file"""
     # If we were passed a string, read it as a file
     if isinstance(node, str):
@@ -41,6 +75,9 @@ class Map(object):
     for g in node.getElementsByTagName('g'):
       self.platforms.extend(_handle_group(g, transform))
 
+
+#################################################################
+
 def _handle_group(node, transform):
   #tmat = _parse_transform(node.attributes['transform'].value)
   #transform = _mat33mul(transform, tmat)
@@ -64,11 +101,7 @@ def _make_shape_from_path(node, transform):
   if not _is_counter_clockwise(points):
     points.reverse()
 
-  shape = b2EdgeChainDef()
-  shape.setVertices(points)
-  shape.isALoop = is_loop
-
-  return shape
+  return Platform(points)
 
 def _make_bounds_from_svg(node, transform):
   w = float(node.attributes['width' ].value)
@@ -76,16 +109,12 @@ def _make_bounds_from_svg(node, transform):
 
   points = [b2Vec2(0,0), b2Vec2(w, 0), b2Vec2(w, h), b2Vec2(0,h)]
   points = _apply_transform(points, transform)
-  
+
   # Note we want this wrapped such that we are on the inside
   if _is_counter_clockwise(points):
     points.reverse()
 
-  shape = b2EdgeChainDef()
-  shape.setVertices(points)
-  shape.isALoop = True
-
-  return shape
+  return Platform(points)
 
 def _is_counter_clockwise(points):
   # Do the wrap around first
@@ -154,7 +183,7 @@ def _parse_c(command, params, points):
     b_points = map(lambda x: b2Vec2(x), b_points[1:])
 
     points.extend(b_points)
-     
+
 
 def _tokenize_d(d):
   tokens = d.split() # split on whitespace
@@ -196,12 +225,12 @@ def _tokenize_number(d):
 
 class ArcDef(object):
   def __init__(r, x_axis_rotation, large_arc_flag, center, sweep_flag, p):
-    self.r               = r               
-    self.x_axis_rotation = x_axis_rotation 
-    self.large_arc_flag  = large_arc_flag  
+    self.r               = r
+    self.x_axis_rotation = x_axis_rotation
+    self.large_arc_flag  = large_arc_flag
     self.center          = center
-    self.sweep_flag      = sweep_flag      
-    self.p               = p               
+    self.sweep_flag      = sweep_flag
+    self.p               = p
 
 def _tokenize_arc(d):
   tail, r               = _tokenize_point(d)
@@ -318,8 +347,6 @@ def _parse_translate(tokens):
   return tokens[1:], mat
 
 
-
-
 # I dont know why box2d doesnt already have these, but I couldnt find them
 def _xform_to_mat33(xform):
   ret = b2Mat33()
@@ -343,7 +370,7 @@ def _mat33_to_xform(mat33):
   ret.R.col1.y   = mat33.col1.y
   ret.R.col2.x   = mat33.col2.x
   ret.R.col2.y   = mat33.col2.y
-                      
+
   ret.position.x = mat33.col3.x
   ret.position.y = mat33.col3.y
 
@@ -373,4 +400,3 @@ def _apply_transform(points, mat33):
 if __name__ == '__main__':
   a = Map()
   a.read('bezier_test_map.svg')
-
