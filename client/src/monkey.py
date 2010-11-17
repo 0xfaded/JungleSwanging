@@ -73,7 +73,7 @@ class Monkey(GameObject):
 
     self.state = 'none'
 
-  def add_to_world(self, world, at):
+  def add_to_world(self, world, contact_listener, at):
     self.bodyDef.position = at
     self.body = world.CreateBody(self.bodyDef)
 
@@ -99,7 +99,9 @@ class Monkey(GameObject):
 
     self.body.SetFixedRotation(True)
 
-  def set_contact_callbacks(self, contact_listener):
+    self._set_contact_callbacks(contact_listener)
+
+  def _set_contact_callbacks(self, contact_listener):
     contact_listener.add_callback(self.on_platform_pre_land, 'Add',
                                   self.foot_shape, str)
 

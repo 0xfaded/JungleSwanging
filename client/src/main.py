@@ -113,7 +113,7 @@ grab2   = Grab(3)
 
 powerup1 = PowerUp(0.25)
 
-monkey.add_to_world(world, (0,3))
+monkey.add_to_world(world, contact_listener, (0,3))
 
 powerup1.add_to_world(world, contact_listener, (1.5,6))
 
@@ -131,10 +131,7 @@ for platform in map.platforms:
     test.CreateShape(platform)
 
 
-#grab1.add_to_world(world, (-10,1))
-grab2.add_to_world(world, (17,-6))
-
-monkey.set_contact_callbacks(contact_listener)
+grab2.add_to_world(world, contact_listener, (17,-6))
 
 def crop_angle(angle):
   """Take an arbitary angle, and return that angle between pi and -pi"""

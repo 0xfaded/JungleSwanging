@@ -22,7 +22,7 @@ class Grab(GameObject):
     self.bodyDef = b2BodyDef()
     self.bodyDef.userData = self
 
-  def add_to_world(self, world, at):
+  def add_to_world(self, world, contact_listener, at):
     self.bodyDef.position = at
 
     self.body = world.CreateBody(self.bodyDef)

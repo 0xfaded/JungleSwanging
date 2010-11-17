@@ -6,9 +6,8 @@ class GameObject(Renderable):
 
   def __init__(self): super(GameObject, self).__init__()
 
-  def on_contact_add(self, contact):
+  def add_to_world(self, world, contact_listener, at):
     return
 
-  def on_contact_remove(self, contact):
+  def update(self, world, contact_listener):
     return
-
