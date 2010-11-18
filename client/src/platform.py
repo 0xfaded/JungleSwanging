@@ -27,8 +27,8 @@ class Platform(GameObject):
 
 
 
-  def add_to_world(self, world, contact_listener, at):
+  def add_to_world(self, at):
     self.bodyDef.position = at
-    self.body = world.CreateBody(self.bodyDef)
+    self.body = self.world.CreateBody(self.bodyDef)
     self.body.CreateShape(self.shape)
 

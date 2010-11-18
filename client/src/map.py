@@ -12,39 +12,11 @@ class ParseError(Exception):
   pass
 
 class Map(GameObject):
-  platforms = []
-  powerups = []
-  grabpoints = []
-  monkeys = []
 
   def __init__(self, parent):
     super(Map, self).__init__(parent)
 
-
-  def add_to_world(self, world, contact_listener, at):
-    for platform in self.platforms:
-      platform.add_to_world(world, contact_listener, at)
-    for powerup in self.powerups:
-      powerup.add_to_world(world, contact_listener, powerup.get_start())
-    for grabpoint in self.grabpoints:
-      grabpoint.add_to_world(world, contact_listener, grabpoint.get_start())
-    for monkey in self.monkeys:
-      monkey.add_to_world(world, contact_listener, monkey.get_start())
-
-
   def read(self, node):
-    powerup1 = PowerUp(self,0.25)
-    powerup1.set_start((1.5,6))
-    self.powerups.append(powerup1)
-
-    grab1 = Grab(self, 3)
-    grab1.set_start((17,-6))
-    self.grabpoints.append(grab1)
-
-    monkey1 = Monkey(self)
-    monkey1.set_start((0,3))
-    self.monkeys.append(monkey1)
-
     """Read a map from an svg file"""
     # If we were passed a string, read it as a file
     if isinstance(node, str):
@@ -64,16 +36,23 @@ class Map(GameObject):
     # Top of the transform stack. Since the scale is 1:100, start with this
     transform = b2Mat33()
     transform.SetZero()
-    transform.col1.x = 0.01
-    transform.col2.y = -0.01
 
-    transform.col3.y = 10
+    scale = 0.01
+
+    transform.col1.x = scale
+    transform.col2.y = -scale
+
+    transform.col3.y = float(node.attributes['height'].value) * scale
     transform.col3.z = 1
 
-    self.platforms.append(_make_bounds_from_svg(node, transform))
+    objs = []
+    objs.append(_make_bounds_from_svg(node, transform))
 
     for g in node.getElementsByTagName('g'):
-      self.platforms.extend(_handle_group(g, transform))
+      objs.extend(_handle_group(g, transform))
+
+    for obj, offset in objs:
+      self.add_child(obj, offset)
 
 
 #################################################################
@@ -101,7 +80,7 @@ def _make_shape_from_path(node, transform):
   if not _is_counter_clockwise(points):
     points.reverse()
 
-  return Platform(points)
+  return (Platform(points), (0,0))
 
 def _make_bounds_from_svg(node, transform):
   w = float(node.attributes['width' ].value)
@@ -114,7 +93,7 @@ def _make_bounds_from_svg(node, transform):
   if _is_counter_clockwise(points):
     points.reverse()
 
-  return Platform(points)
+  return (Platform(points), (0,0))
 
 def _is_counter_clockwise(points):
   # Do the wrap around first

@@ -108,10 +108,18 @@ clock = pygame.time.Clock()
 
 
 map = Map(None)
+map.set_root(world, contact_listener)
+
 map.read('map2.svg')
 
-map.add_to_world(world, contact_listener, (0,0))
 
+powerup = PowerUp(map,0.25)
+grab = Grab(map, 3)
+monkey = Monkey(map)
+
+map.add_child(monkey, (2,5))
+map.add_child(grab, (17, 14))
+map.add_child(powerup, (2, 8))
 
 def crop_angle(angle):
   """Take an arbitary angle, and return that angle between pi and -pi"""
@@ -121,7 +129,7 @@ fps = 30
 active = True
 
 while active:
-  deltat = clock.tick(fps)
+  delta_t = clock.tick(fps)
 
   events = []
   for event in pygame.event.get():
@@ -144,16 +152,14 @@ while active:
   glScale(zoom, zoom, 1)
 
   # center camera on monkey
-  #mx, my = monkey.body.position
-  #glTranslate(-mx, -my, 0)
+  mx, my = monkey.body.position
+  glTranslate(-mx, -my, 0)
 
   debugdraw.init_draw()
 
   world.Step(1.0/fps, 10, 8)
 
-  #powerup1.update(world, contact_listener)
-
-  #monkey.control(keys, events)
+  map.update_tree((keys, events), delta_t) 
 
   debugdraw.draw()
 

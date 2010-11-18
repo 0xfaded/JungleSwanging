@@ -26,29 +26,24 @@ class PowerUp(GameObject):
     self.bodyDef.userData = self
     self.bodyDef.fixedRotation = True
 
-  def add_to_world(self, world, contact_listener, at):
+  def add_to_world(self, at):
     self.bodyDef.position = at
 
-    self.body = world.CreateBody(self.bodyDef)
+    self.body = self.world.CreateBody(self.bodyDef)
     self.body.CreateShape(self.circleDef)
 
     self.body.SetMassFromShapes()
 
-    self.callback_id = \
-        contact_listener.add_callback(self.foo, 'Add', self.body, Monkey)
+    self.add_callback(self.foo, 'Add', self.body, Monkey)
 
 
     self.destroyMe = False
 
-  def update(self, world, contact_listener):
+  def update(self, controller, delta_t):
     if self.destroyMe:
-
-      contact_listener.remove_callback(self.callback_id, 'Add')
-      world.DestroyBody(self.body)
+      self.kill_me()
 
   def foo(self, contact):
-    print contact
-
     contact.shape2.GetBody().userData.max_ground_velocity = 10
 
     contact.shape1.GetBody().userData.destroyMe = True

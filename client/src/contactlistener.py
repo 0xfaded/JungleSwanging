@@ -67,7 +67,11 @@ class ContactListener(b2ContactListener):
 
     return id(callback)
   
-  def remove_callback(self, callback_id, events):
+  def remove_callback(self, callback_id, events = None):
+
+    if events == None:
+      events = ['Add', 'Persist', 'Remove', 'Result']
+
     if isinstance(events, str):
       events = [events]
 

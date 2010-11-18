@@ -16,22 +16,40 @@ import copy
 
 class Monkey(GameObject):
 
-  category = 1
-  mass       = 50.0
-  elasticity = 0.8
+  class Stats(object):
+    """
+    These stats define how the monkey behaves in the simulation.
+    At the beginning of each update, powerups will be mapped across
+    the monkeys initial Stats, as defined in the below __init__(),
+    and the resulting modified Stats will be used to determine the
+    monkeys interaction with the simulation.
+    """
+    def __init__(self):
+      # Box2D Properties
+      self.restitution = 0.5
+      self.friction    = 3
+      self.density     = 1
 
-  # Note additonal friction is calculated separately whilst on ground
-  friction   = 3
+      # Other Stats
+      self.ground_force_x       = 30 # Ground acceleration along the x axis
+      self.ground_force_y       = 30 # Ground acceleration along the y axis
 
-  max_landing_impulse = 30
-  max_knock_impulse   = 10
+      self.air_force_x          =  0 # Air acceleration along the x axis
+      self.aid_force_y          =  0 # Air acceleration along the y axis
 
-  max_ground_velocity = 5
+      self.max_landing_impulse  = 30
+      self.max_knock_impulse    = 20
+
+      # if velocity < max_velocity: apply force
+      max_ground_velocity       =  5
+      max_air_velocity          =  2
 
   def __init__(self, parent):
     super(Monkey, self).__init__(parent)
 
     self.t = 0
+
+    self.stats = Monkey.Stats()
 
   # Body consists a box with a circle at the top and bottom
     #self.points = [( 0.0923, 0.0382),( 0.0382, 0.0923), \
@@ -74,9 +92,9 @@ class Monkey(GameObject):
 
     self.state = 'none'
 
-  def add_to_world(self, world, contact_listener, at):
+  def add_to_world(self, at):
     self.bodyDef.position = at
-    self.body = world.CreateBody(self.bodyDef)
+    self.body = self.world.CreateBody(self.bodyDef)
 
     self.boxShape = self.body.CreateShape(self.boxDef)
     self.boxShape = self.boxShape.asPolygon()
@@ -100,25 +118,25 @@ class Monkey(GameObject):
 
     self.body.SetFixedRotation(True)
 
-    self._set_contact_callbacks(contact_listener)
+    self._set_contact_callbacks()
 
-  def _set_contact_callbacks(self, contact_listener):
-    contact_listener.add_callback(self.on_platform_pre_land, 'Add',
-                                  self.foot_shape, Platform)
+  def _set_contact_callbacks(self):
+    self.add_callback(self.on_platform_pre_land, 'Add',
+                      self.foot_shape, Platform)
 
-    contact_listener.add_callback(self.on_platform_land, 'Result',
-                                  self.foot_shape, Platform)
+    self.add_callback(self.on_platform_land, 'Result',
+                      self.foot_shape, Platform)
 
-    contact_listener.add_callback(self.on_platform_leave, 'Remove',
-                                  self.foot_shape, Platform)
+    self.add_callback(self.on_platform_leave, 'Remove',
+                      self.foot_shape, Platform)
 
-    contact_listener.add_callback(self.on_hit, 'Result', self.body)
+    self.add_callback(self.on_hit, 'Result', self.body)
 
-    contact_listener.add_callback(self.on_grab_touch, 'Live',
-                                  self.shoulder_shape, Grab)
+    self.add_callback(self.on_grab_touch, 'Live',
+                      self.shoulder_shape, Grab)
 
-    contact_listener.add_callback(self.on_grab_leave, 'Remove',
-                                  self.shoulder_shape, Grab)
+    self.add_callback(self.on_grab_leave, 'Remove',
+                      self.shoulder_shape, Grab)
 
   def on_platform_land(self, result):
     # For movement calculations, if we are in a grounded state we
@@ -198,7 +216,10 @@ class Monkey(GameObject):
     down = b2Vec2(0, -1)
 
 
-  def control(self, keys, events):
+  def update(self, controller, delta_t):
+    keys, events = controller
+
+
     self.keys = keys
 
     # Calculate the force vector to apply in the left or right direction
@@ -213,6 +234,7 @@ class Monkey(GameObject):
       key_basis += b2Vec2(-1, 0)
     if keys[K_RIGHT]:
       key_basis += b2Vec2(1, 0)
+    if keys[
 
     for event in events:
       if event.type == pygame.KEYDOWN:
@@ -277,10 +299,7 @@ class Monkey(GameObject):
 
     # Apply Force
     if force.Length() != 0:
-      forceN = force.copy()
-      forceN.Normalize()
-      # TODO Max speed == 5, clean this
-      if b2Dot(self.body.linearVelocity, forceN) < self.max_ground_velocity:
+      if self.body.linearVelocity.GetLength() < self.max_ground_velocity:
         self.body.ApplyForce(force, self.body.position)
 
     if impulse.Length() != 0:
