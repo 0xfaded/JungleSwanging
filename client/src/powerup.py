@@ -44,6 +44,6 @@ class PowerUp(GameObject):
       self.kill_me()
 
   def foo(self, contact):
-    contact.shape2.GetBody().userData.max_ground_velocity = 10
+    contact.shape2.GetBody().userData.stats.max_ground_velocity = 10
 
     contact.shape1.GetBody().userData.destroyMe = True

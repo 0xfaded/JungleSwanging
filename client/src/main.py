@@ -119,7 +119,7 @@ monkey = Monkey(map)
 
 map.add_child(monkey, (2,5))
 map.add_child(grab, (17, 14))
-map.add_child(powerup, (2, 8))
+#map.add_child(powerup, (2, 8))
 
 def crop_angle(angle):
   """Take an arbitary angle, and return that angle between pi and -pi"""
