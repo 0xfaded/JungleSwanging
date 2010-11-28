@@ -37,8 +37,8 @@ class Monkey(GameObject):
       self.ground_impulse_x     =  0
       self.ground_impulse_y     = 20 # Best thought as jump
 
-      self.air_force_x          = 10 # Air acceleration along the x axis
-      self.air_force_y          = 40 # Air acceleration along the y axis
+      self.air_force_x          =  0 # Air acceleration along the x axis
+      self.air_force_y          =  0 # Air acceleration along the y axis
 
       self.air_impulse_x        =  0
       self.air_impulse_y        =  0 # Best thought as air boost
@@ -49,11 +49,11 @@ class Monkey(GameObject):
       self.hang_impulse_x       =  0
       self.hang_impulse_y       =  0 # Best thought as hang boost
 
-      self.max_landing_impulse  = 35
+      self.max_landing_speed    = 5
       self.max_knock_impulse    = 20
 
       # if velocity < max_velocity: apply force
-      self.max_ground_velocity  =  5
+      self.max_ground_velocity  =  10
       self.max_air_velocity     =  2
 
   def __init__(self, parent):
@@ -236,9 +236,6 @@ class Monkey(GameObject):
     self.add_callback(self.on_platform_pre_land, 'Add',
                       self.foot_shape, Platform)
 
-    self.add_callback(self.on_platform_land, 'Result',
-                      self.foot_shape, Platform)
-
     self.add_callback(self.on_platform_leave, 'Remove',
                       self.foot_shape, Platform)
 
@@ -249,43 +246,6 @@ class Monkey(GameObject):
 
     self.add_callback(self.on_grab_leave, 'Remove',
                       self.shoulder_shape, Grab)
-
-  def on_platform_land(self, result):
-    # For movement calculations, if we are in a grounded state we
-    # need to store the best suiting platform contact. We choose
-    # the most horizontal platform as the best suiting
-
-    # First reject any hard landings
-    up = b2Vec2(0,1)
-    monkey_up = b2Mul(b2Mat22(self.body.angle), up)
-
-    reject_dot = (b2Dot(monkey_up, up) * 0.9 + 0.1)
-
-    reject_dot **= 3
-
-    print result.normalImpulse
-    max_impulse = self.stats.max_landing_impulse * reject_dot
-
-    if result.normalImpulse <= max_impulse:
-      up = b2Vec2(0, 1)
-      dot = b2Dot(result.normal, up)
-
-      # Reject any platform at an angle greater than 60 degrees
-      if dot > 0.5:
-        # Choose best dot from either new platform or existing contact
-        if self.platform_contact == None:
-          self.platform_contact = copy.copy(result)
-        else:
-          old_dot = b2Dot(self.platform_contact.normal, up)
-
-          if dot > old_dot:
-            self.platform_contact = copy.copy(result)
-
-        # If there is now an accepted platform, we are controlled
-        self.controlled = True
-        return True
-    
-    return False
 
   def on_platform_leave(self, contact):
     if self.platform_contact == None:
@@ -319,18 +279,45 @@ class Monkey(GameObject):
 
 
   def on_hit(self, result):
+    # Platform and foot collides are handled separetly
     if result.shape1.this == self.foot_shape.this and \
         isinstance(result.shape2.GetBody().userData, Platform):
+      
+      if self.on_platform_land(result):
+        # In the event that we landed on a platform, we are done
+        return
 
-      # Platform and foot collides are handled separetly
-      self.on_platform_land(result)
+    max_impulse = self.stats.max_knock_impulse
+    impulse = math.hypot(result.normalImpulse, result.tangentImpulse)
 
-    else:
-      max_impulse = self.stats.max_knock_impulse
-      impulse = math.hypot(result.normalImpulse, result.tangentImpulse)
+    if impulse > max_impulse:
+      self.controlled = False
 
-      if impulse > max_impulse:
-        self.controlled = False
+  def on_platform_land(self, result):
+    # For movement calculations, if we are in a grounded state we
+    # need to store the best suiting platform contact. We choose
+    # the most horizontal platform as the best suiting
+    #
+    # Return True if we handled the collision, False otherwise
+
+    # First reject hard landings
+    if self._will_land(result):
+      # Choose best dot from either new platform or existing contact
+      if self.platform_contact == None:
+        self.platform_contact = copy.copy(result)
+      else:
+        up = b2Vec2(0, 1)
+        old_dot = b2Dot(self.platform_contact.normal, up)
+        new_dot = b2Dot(result.normal, up)
+
+        if new_dot > old_dot:
+          self.platform_contact = copy.copy(result)
+
+      # If there is now an accepted platform, we are controlled
+      self.controlled = True
+      return True
+
+    return False
 
   def _attempt_grab(self):
     world = self.body.GetWorld()
@@ -358,11 +345,7 @@ class Monkey(GameObject):
 
 
   def on_platform_pre_land(self, contact):
-    normal_vel = b2Dot(contact.velocity, contact.normal) * contact.normal
-    # print normal_vel
-    # TODO clean this up
-    contact.shape1.restitution = 0
-    if normal_vel.Length() < 10:
+    if self._will_land(contact):
       contact.shape1.restitution = 0
     else:
       contact.shape1.restitution = self.stats.restitution
@@ -477,4 +460,26 @@ class Monkey(GameObject):
     d_vec   = b2Mul(rot_mat, up)
 
     return b2Dot(d_vec, reference)
+
+  def _will_land(self, platform_contact):
+    """
+    Calculate whether the monkey is in a stable enough state as to land
+    upright when he hits a platform
+    """
+    uprightness = self._uprightness(b2Vec2(0,1))
+
+    platform_dot = b2Dot(platform_contact.normal, b2Vec2(0,1)) 
+
+    # Reject any platform at an angle greater than 60 degrees
+    if platform_dot < 0.5:
+      return False
+
+    
+    score = uprightness * self.body.linearVelocity.Length()
+
+    # Only consider score component perpendictular to the platform
+    score *= platform_dot
+    print score
+
+    return score < self.stats.max_landing_speed
 

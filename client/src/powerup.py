@@ -11,6 +11,10 @@ from Box2D import *
 from gameobject import *
 from monkey import *
 
+class Projectile(GameObject):
+  def __init__(self, parent, radius):
+    super(GameObject, self).__init__(parent);
+
 class PowerUp(GameObject):
 
   def __init__(self, parent, radius):
