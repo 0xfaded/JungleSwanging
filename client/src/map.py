@@ -6,6 +6,8 @@ from powerup import *
 from grab import *
 from monkey import *
 
+from objectid import *
+
 from bezieredge import *
 
 class ParseError(Exception):
@@ -13,8 +15,14 @@ class ParseError(Exception):
 
 class Map(GameObject):
 
-  def __init__(self, parent):
-    super(Map, self).__init__(parent)
+  def __init__(self):
+    super(Map, self).__init__()
+
+  def to_network(self, msg):
+    msg.append(map_id)
+
+  def from_network(self, msg):
+    id    = msg.pop()
 
   def read(self, node):
     """Read a map from an svg file"""

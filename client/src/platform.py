@@ -7,6 +7,7 @@ from pygame.locals import *
 from Box2D import *
 from gameobject import *
 
+from objectid import *
 
 class Platform(GameObject):
 
@@ -16,7 +17,7 @@ class Platform(GameObject):
 #  bodyDef
 
   def __init__(self, points):
-    super(Platform, self).__init__(self)
+    super(Platform, self).__init__()
 
     self.shape = b2EdgeChainDef()
     self.shape.setVertices(points)
@@ -31,4 +32,16 @@ class Platform(GameObject):
     self.bodyDef.position = at
     self.body = self.world.CreateBody(self.bodyDef)
     self.body.CreateShape(self.shape)
+
+  def to_network(self, msg):
+    msg.append(platform_id)
+
+  def from_network(self, msg):
+    id    = msg.pop()
+
+  def render(self):
+    """
+    Platforms are all rendered in the background image
+    """
+    pass
 

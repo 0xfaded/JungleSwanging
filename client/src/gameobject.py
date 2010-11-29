@@ -1,10 +1,14 @@
 # vim:set ts=2 sw=2 et:
 from renderable import *
 
+#from objectfactory import *
+
+from objectid import *
+
 class GameObject(Renderable):
-  def __init__(self, parent):
+  def __init__(self):
     super(GameObject, self).__init__()
-    self.parent = parent
+    self.parent = None;
 
     self.body = None
     self.parent = None
@@ -86,4 +90,48 @@ class GameObject(Renderable):
       root = root.parent
 
     return root
+
+  def tree_to_network(self, msg):
+    """
+    Write the entire tree to a network
+    """
+    self.to_network(msg)
+    msg.append(len(self.children))
+    for child in self.children:
+      child.tree_to_network(msg)
+
+  def tree_from_network(self, msg):
+    """
+    Read the entire tree to a network. Note this requires knowing what
+    the root class is, which is always of type Map. So only directly
+    call this method from a Map
+    """
+
+    self.from_network(msg)
+    n_children = int(msg.pop())
+    for n in xrange(n_children):
+      obj_id = int(msg[-1])
+      child = None #ObjectFactory.from_id(obj_id)
+      child.tree_from_network(msg)
+      self.children.append(child)
+
+    """
+    Creates a minimal representation containing data required for
+    rendering the game object 
+    """
+    raise NotImplementedError()
+
+  def to_network(self, msg):
+    """
+    Creates a minimal representation containing data required for
+    rendering the game object 
+    """
+    raise NotImplementedError()
+
+  def from_network(self, msg):
+    """
+    Reconstructs a minimal representation containing data required for
+    rendering the game object 
+    """
+    raise NotImplementedError()
 

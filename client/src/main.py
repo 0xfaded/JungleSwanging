@@ -107,15 +107,15 @@ world.SetContactListener(contact_listener)
 clock = pygame.time.Clock()
 
 
-map = Map(None)
+map = Map()
 map.set_root(world, contact_listener)
 
 map.read('map2.svg')
 
 
-powerup = PowerUp(map,0.25)
-grab = Grab(map, 3)
-monkey = Monkey(map)
+powerup = PowerUp(0.25)
+grab = Grab(3)
+monkey = Monkey()
 
 map.add_child(monkey, (2,5))
 map.add_child(grab, (17, 14))
@@ -160,6 +160,11 @@ while active:
   world.Step(1.0/fps, 10, 8)
 
   map.update_tree((keys, events), delta_t) 
+
+  msg = []
+  map.tree_to_network(msg)
+  print msg
+
 
   debugdraw.draw()
 

@@ -11,14 +11,16 @@ from Box2D import *
 from gameobject import *
 from monkey import *
 
+from objectid import *
+
 class Projectile(GameObject):
-  def __init__(self, parent, radius):
-    super(GameObject, self).__init__(parent);
+  def __init__(self, radius):
+    super(GameObject, self).__init__();
 
 class PowerUp(GameObject):
 
-  def __init__(self, parent, radius):
-    super(PowerUp, self).__init__(parent)
+  def __init__(self, radius):
+    super(PowerUp, self).__init__()
 
     self.circleDef = b2CircleDef()
     self.circleDef.radius = radius
@@ -42,6 +44,29 @@ class PowerUp(GameObject):
 
 
     self.destroyMe = False
+
+  def to_network(self, msg):
+    msg.append(powerup_id)
+    msg.append(self.body.position.x)
+    msg.append(self.body.position.y)
+    msg.append(self.body.angle)
+
+  def from_network(self, msg):
+    id    = msg.pop()
+
+    x     = float(msg.pop())
+    y     = float(msg.pop())
+    angle = float(msg.pop())
+
+    # Use a dummy body as we dont run a simulation on the client
+    dummy = b2BodyDef()
+    dummy.position = b2Vec2(x,y)
+    dummy.angle    = angle
+
+    # This is ugly, but for our purposes a BodyDef has
+    # all the attributes required for rendering, and I'm in a rush
+    self.body = dummy
+
 
   def update(self, controller, delta_t):
     if self.destroyMe:

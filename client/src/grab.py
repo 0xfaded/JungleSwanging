@@ -9,11 +9,12 @@ from pygame.locals import *
 from Box2D import *
 
 from gameobject import *
+from objectid import *
 
 class Grab(GameObject):
 
-  def __init__(self, parent, radius):
-    super(Grab, self).__init__(parent)
+  def __init__(self, radius):
+    super(Grab, self).__init__()
 
     self.circleDef = b2CircleDef()
     self.circleDef.isSensor = True
@@ -27,4 +28,17 @@ class Grab(GameObject):
 
     self.body = self.world.CreateBody(self.bodyDef)
     self.body.CreateShape(self.circleDef)
+
+  def to_network(self, msg):
+    msg.append(grab_id)
+
+  def from_network(self, msg):
+    id = msg.pop()
+
+  def render(self):
+    """
+    Platforms are all rendered in the background image
+    The highlighting is done here
+    """
+    pass
 

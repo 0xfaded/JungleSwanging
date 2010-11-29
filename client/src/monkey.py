@@ -12,6 +12,8 @@ from gameobject import *
 from grab import *
 from platform import *
 
+from objectid import *
+
 import copy
 
 class Monkey(GameObject):
@@ -56,8 +58,8 @@ class Monkey(GameObject):
       self.max_ground_velocity  =  10
       self.max_air_velocity     =  2
 
-  def __init__(self, parent):
-    super(Monkey, self).__init__(parent)
+  def __init__(self):
+    super(Monkey, self).__init__()
 
     self.t = 0
 
@@ -124,6 +126,29 @@ class Monkey(GameObject):
     self.body.SetFixedRotation(True)
 
     self._set_contact_callbacks()
+
+  def to_network(self, msg):
+    msg.append(monkey_id)
+    msg.append(self.body.position.x)
+    msg.append(self.body.position.y)
+    msg.append(self.body.angle)
+
+  def from_network(self, msg):
+    id    = msg.pop()
+
+    x     = float(msg.pop())
+    y     = float(msg.pop())
+    angle = float(msg.pop())
+
+    # Use a dummy body as we dont run a simulation on the client
+    dummy = b2BodyDef()
+    dummy.position = b2Vec2(x,y)
+    dummy.angle    = angle
+
+    # This is ugly, but for our purposes a BodyDef has
+    # all the attributes required for rendering, and I'm in a rush
+    self.body = dummy
+
 
   def update(self, controller, delta_t):
     keys, events = controller
@@ -479,7 +504,6 @@ class Monkey(GameObject):
 
     # Only consider score component perpendictular to the platform
     score *= platform_dot
-    print score
 
     return score < self.stats.max_landing_speed
 
