@@ -5,7 +5,7 @@ from renderable import *
 
 from objectid import *
 
-class GameObject(Renderable):
+class GameObject(Object):
   def __init__(self):
     super(GameObject, self).__init__()
     self.parent = None;
@@ -134,4 +134,13 @@ class GameObject(Renderable):
     rendering the game object 
     """
     raise NotImplementedError()
+
+  def tree_render(self):
+    self.render()
+    for child in self.children:
+      child.render()
+
+  def render(self):
+    raise NotImplementedError()
+
 
