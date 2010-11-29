@@ -3,15 +3,13 @@
 from OpenGL.GL import *
 import math
 
-import pygame
-from pygame.locals import *
-
 from Box2D import *
 
-from gameobject import *
+import gameobject
+
 from objectid import *
 
-class Grab(GameObject):
+class Grab(gameobject.GameObject):
 
   def __init__(self, radius):
     super(Grab, self).__init__()

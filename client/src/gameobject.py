@@ -1,11 +1,10 @@
 # vim:set ts=2 sw=2 et:
-from renderable import *
 
 #from objectfactory import *
 
 from objectid import *
 
-class GameObject(Object):
+class GameObject(object):
   def __init__(self):
     super(GameObject, self).__init__()
     self.parent = None;

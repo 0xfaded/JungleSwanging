@@ -1,15 +1,13 @@
 # vim:set sw=2 ts=2 sts=2 et:
 
 from OpenGL.GL import *
-import math
-import pygame
-from pygame.locals import *
 from Box2D import *
-from gameobject import *
+
+import gameobject
 
 from objectid import *
 
-class Platform(GameObject):
+class Platform(gameobject.GameObject):
 
   points = []
 #  shape

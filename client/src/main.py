@@ -11,16 +11,14 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 # Monkeys Imports
-from monkey import *
-from jungle import *
-from grab import *
-from powerup import *
+import monkey 
+import grab 
+import powerup 
+import world 
 
-from world import World 
+import contactlistener 
 
-from contactlistener import *
-
-from server import *
+import server 
 
 # Temporary debugging stuff
 import gldebugdraw
@@ -103,25 +101,25 @@ debugdraw.SetFlags(flags)
 b2_world.SetDebugDraw(debugdraw)
 
 # Set the contact listener
-contact_listener = ContactListener()
+contact_listener = contactlistener.ContactListener()
 b2_world.SetContactListener(contact_listener)
 
 clock = pygame.time.Clock()
 
 
-world = World()
-world.set_root(b2_world, contact_listener)
+game_world = world.World()
+game_world.set_root(b2_world, contact_listener)
 
-world.read('map2.svg')
+game_world.read('map2.svg')
 
 
-powerup = PowerUp(0.25)
-grab = Grab(3)
-monkey = Monkey()
+powerup1  = powerup.PowerUp(0.25)
+grab1     = grab.Grab(3)
+monkey1   = monkey.Monkey()
 
-world.add_child(monkey, (2,5))
-world.add_child(grab, (17, 14))
-world.add_child(powerup, (2, 8))
+game_world.add_child(monkey1, (2,5))
+game_world.add_child(grab1, (17, 14))
+game_world.add_child(powerup1, (2, 8))
 
 def crop_angle(angle):
   """Take an arbitary angle, and return that angle between pi and -pi"""
@@ -154,23 +152,23 @@ while active:
   glScale(zoom, zoom, 1)
 
   # center camera on monkey
-  mx, my = monkey.body.position
+  mx, my = monkey1.body.position
   glTranslate(-mx, -my, 0)
 
   debugdraw.init_draw()
 
   b2_world.Step(1.0/fps, 10, 8)
 
-  world.update_tree((keys, events), delta_t) 
+  game_world.update_tree((keys, events), delta_t) 
 
   msg = []
-  world.tree_to_network(msg)
+  game_world.tree_to_network(msg)
 
   msg = map(str, msg)
   msg = ','.join(msg) + '\n';
   
-  Server.broadcast(str(msg))
-  Server.iterate()
+  server.Server.broadcast(str(msg))
+  server.Server.iterate()
 
 
   debugdraw.draw()

@@ -8,15 +8,15 @@ from pygame.locals import *
 
 from Box2D import *
 
-from gameobject import *
-from grab import *
-from platform import *
+import gameobject
+import grab
+import platform
 
 from objectid import *
 
 import copy
 
-class Monkey(GameObject):
+class Monkey(gameobject.GameObject):
 
   class Stats(object):
     """
@@ -259,18 +259,18 @@ class Monkey(GameObject):
 
   def _set_contact_callbacks(self):
     self.add_callback(self.on_platform_pre_land, 'Add',
-                      self.foot_shape, Platform)
+                      self.foot_shape, platform.Platform)
 
     self.add_callback(self.on_platform_leave, 'Remove',
-                      self.foot_shape, Platform)
+                      self.foot_shape, platform.Platform)
 
     self.add_callback(self.on_hit, 'Result', self.body)
 
     self.add_callback(self.on_grab_touch, 'Live',
-                      self.shoulder_shape, Grab)
+                      self.shoulder_shape, grab.Grab)
 
     self.add_callback(self.on_grab_leave, 'Remove',
-                      self.shoulder_shape, Grab)
+                      self.shoulder_shape, grab.Grab)
 
   def on_platform_leave(self, contact):
     if self.platform_contact == None:
@@ -306,7 +306,7 @@ class Monkey(GameObject):
   def on_hit(self, result):
     # Platform and foot collides are handled separetly
     if result.shape1.this == self.foot_shape.this and \
-        isinstance(result.shape2.GetBody().userData, Platform):
+        isinstance(result.shape2.GetBody().userData, platform.Platform):
       
       if self.on_platform_land(result):
         # In the event that we landed on a platform, we are done

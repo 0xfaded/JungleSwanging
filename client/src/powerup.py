@@ -3,21 +3,18 @@
 from OpenGL.GL import *
 import math
 
-import pygame
-from pygame.locals import *
-
 from Box2D import *
 
-from gameobject import *
-from monkey import *
+import gameobject
+import monkey
 
 from objectid import *
 
-class Projectile(GameObject):
+class Projectile(gameobject.GameObject):
   def __init__(self, radius):
     super(GameObject, self).__init__();
 
-class PowerUp(GameObject):
+class PowerUp(gameobject.GameObject):
 
   def __init__(self, radius):
     super(PowerUp, self).__init__()
@@ -40,7 +37,7 @@ class PowerUp(GameObject):
 
     self.body.SetMassFromShapes()
 
-    self.add_callback(self.foo, 'Add', self.body, Monkey)
+    self.add_callback(self.foo, 'Add', self.body, monkey.Monkey)
 
 
     self.destroyMe = False

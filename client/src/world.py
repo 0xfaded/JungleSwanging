@@ -1,10 +1,13 @@
 from xml.dom.minidom import parse
 from Box2D import *
 import xml
-from platform import *
-from powerup import *
-from grab import *
-from monkey import *
+
+import gameobject
+
+import platform
+import powerup
+import grab
+import monkey
 
 from objectid import *
 
@@ -13,7 +16,7 @@ from bezieredge import *
 class ParseError(Exception):
   pass
 
-class World(GameObject):
+class World(gameobject.GameObject):
 
   def __init__(self):
     super(World, self).__init__()
@@ -88,7 +91,7 @@ def _make_shape_from_path(node, transform):
   if not _is_counter_clockwise(points):
     points.reverse()
 
-  return (Platform(points), (0,0))
+  return (platform.Platform(points), (0,0))
 
 def _make_bounds_from_svg(node, transform):
   w = float(node.attributes['width' ].value)
@@ -101,7 +104,7 @@ def _make_bounds_from_svg(node, transform):
   if _is_counter_clockwise(points):
     points.reverse()
 
-  return (Platform(points), (0,0))
+  return (platform.Platform(points), (0,0))
 
 def _is_counter_clockwise(points):
   # Do the wrap around first
