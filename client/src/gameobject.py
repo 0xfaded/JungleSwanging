@@ -1,9 +1,5 @@
 # vim:set ts=2 sw=2 et:
 
-#from objectfactory import *
-
-from objectid import *
-
 class GameObject(object):
   def __init__(self):
     super(GameObject, self).__init__()
@@ -110,7 +106,7 @@ class GameObject(object):
     n_children = int(msg.pop())
     for n in xrange(n_children):
       obj_id = int(msg[-1])
-      child = None #ObjectFactory.from_id(obj_id)
+      child = ObjectFactory.from_id(obj_id)
       child.tree_from_network(msg)
       self.children.append(child)
 
@@ -142,4 +138,7 @@ class GameObject(object):
   def render(self):
     raise NotImplementedError()
 
+# Avoid circular imports. Game object must be defined before
+# importing object factory
+import objectfactory
 
