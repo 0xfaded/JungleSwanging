@@ -13,13 +13,13 @@ from bezieredge import *
 class ParseError(Exception):
   pass
 
-class Map(GameObject):
+class World(GameObject):
 
   def __init__(self):
-    super(Map, self).__init__()
+    super(World, self).__init__()
 
   def to_network(self, msg):
-    msg.append(map_id)
+    msg.append(world_id)
 
   def from_network(self, msg):
     id    = msg.pop()

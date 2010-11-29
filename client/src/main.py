@@ -16,9 +16,11 @@ from jungle import *
 from grab import *
 from powerup import *
 
-from map import Map
+from world import World 
 
 from contactlistener import *
+
+from server import *
 
 # Temporary debugging stuff
 import gldebugdraw
@@ -81,7 +83,7 @@ gravity = b2Vec2(0, -10)
 doSleep = True
 
 # Construct a world object, which will hold and simulate the rigid bodies.
-world = b2World(worldAABB, gravity, doSleep)
+b2_world = b2World(worldAABB, gravity, doSleep)
 
 # Simple graphics for now
 
@@ -98,28 +100,28 @@ if Settings.drawPairs:      flags |= b2DebugDraw.e_pairBit
 if Settings.drawCOMs:       flags |= b2DebugDraw.e_centerOfMassBit
 debugdraw.SetFlags(flags)
 
-world.SetDebugDraw(debugdraw)
+b2_world.SetDebugDraw(debugdraw)
 
 # Set the contact listener
 contact_listener = ContactListener()
-world.SetContactListener(contact_listener)
+b2_world.SetContactListener(contact_listener)
 
 clock = pygame.time.Clock()
 
 
-map = Map()
-map.set_root(world, contact_listener)
+world = World()
+world.set_root(b2_world, contact_listener)
 
-map.read('map2.svg')
+world.read('map2.svg')
 
 
 powerup = PowerUp(0.25)
 grab = Grab(3)
 monkey = Monkey()
 
-map.add_child(monkey, (2,5))
-map.add_child(grab, (17, 14))
-map.add_child(powerup, (2, 8))
+world.add_child(monkey, (2,5))
+world.add_child(grab, (17, 14))
+world.add_child(powerup, (2, 8))
 
 def crop_angle(angle):
   """Take an arbitary angle, and return that angle between pi and -pi"""
@@ -157,18 +159,21 @@ while active:
 
   debugdraw.init_draw()
 
-  world.Step(1.0/fps, 10, 8)
+  b2_world.Step(1.0/fps, 10, 8)
 
-  map.update_tree((keys, events), delta_t) 
+  world.update_tree((keys, events), delta_t) 
 
   msg = []
-  map.tree_to_network(msg)
-  print msg
+  world.tree_to_network(msg)
+
+  msg = map(str, msg)
+  msg = ','.join(msg) + '\n';
+  
+  Server.broadcast(str(msg))
+  Server.iterate()
 
 
   debugdraw.draw()
-
-  dir(world)
 
 
   #monkey.render()
