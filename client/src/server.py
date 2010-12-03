@@ -10,7 +10,7 @@ class MonkeyProtocol(Protocol):
   def connectionMade(self):
     self.factory.active[id(self)] = self
 
-  def connectionLost(self):
+  def connectionLost(self, reason):
     del self.factory.active[id(self)]
 
      
@@ -35,7 +35,11 @@ class Server (Factory):
       print connection
       connection.transport.write(msg)
 
+  def shutdown(self):
+    self.reactor.fireSystemEvent('shutdown')
+
 # Singleton
 Server = Server(reactor)
 reactor.listenTCP(8007, Server)
+reactor.fireSystemEvent('startup')
 

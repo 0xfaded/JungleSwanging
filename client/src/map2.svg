@@ -38,14 +38,17 @@
   <g
      id="platform">
     <path
+       class="platform"
        d="m 350,1330 600,0 -300,500 z"
        id="path2995-7-6"
        style="fill:none;stroke:#ff0000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
     <path
+       class="platform"
        d="m 1150,1000 600,0 -300,500 z"
        id="path2995-7-6-8"
        style="fill:none;stroke:#ff0000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
     <path
+       class="platform"
        d="m 200,500 600,0 -300,500 z"
        id="path2995-7-6-8-1"
        style="fill:none;stroke:#ff0000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />

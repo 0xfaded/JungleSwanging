@@ -53,14 +53,31 @@ class World(gameobject.GameObject):
     transform.col1.x = scale
     transform.col2.y = -scale
 
-    transform.col3.y = float(node.attributes['height'].value) * scale
+    height = float(_D(node.attributes['height'].value))
+    width  = float(_D(node.attributes['width'].value))
+
+    transform.col3.y = height * scale
     transform.col3.z = 1
 
     objs = []
     objs.append(_make_bounds_from_svg(node, transform))
 
-    for g in node.getElementsByTagName('g'):
-      objs.extend(_handle_group(g, transform))
+    if node.attributes.has_key('viewBox'):
+      tokens = node.attributes['viewBox'].value.split()
+      tail, (vx, vy, vw, vh) = _tokenize_numbers(tokens)
+      vbox = b2Mat33()
+      vbox.SetZero()
+
+      vbox.col1.x = width / vw
+      vbox.col2.y = height / vh
+
+      vbox.col3.x = -vx
+      vbox.col3.y = -vy
+      vbox.col3.z = 1
+
+      transform = _mat33mul(transform, vbox)
+
+    objs.extend(_handle_group(node, transform))
 
     for obj, offset in objs:
       self.add_child(obj, offset)
@@ -68,34 +85,79 @@ class World(gameobject.GameObject):
 
 #################################################################
 
+def _D(s):
+  return filter(unicode.isdigit, s) 
+  
 def _handle_group(node, transform):
-  #tmat = _parse_transform(node.attributes['transform'].value)
-  #transform = _mat33mul(transform, tmat)
+  if node.attributes.has_key('transform'):
+    tmat = _parse_transform(node.attributes['transform'].value)
+    transform = _mat33mul(transform, tmat)
 
   ret = []
-  for path in node.getElementsByTagName('path'):
-    ret.append(_make_shape_from_path(path, transform))
+  for child in node.childNodes:
+    if child.nodeType != child.ELEMENT_NODE:
+      continue
+
+    # Handle groups recursively
+    if child.tagName == 'g':
+      ret.extend(_handle_group(child, transform))
+      continue
+
+    klass = None
+    if child.attributes.has_key('class'):
+      klass = child.attributes['class'].value
+
+    if klass == None:
+      continue
+
+    if child.tagName in ['rect', 'path', 'polygon']:
+      if klass in ['platform', 'bounds']:
+        points = _make_shape(child, transform)
+
+        if klass == 'bounds':
+          points.reverse()
+
+        offset = (0,0)
+        ret.append((platform.Platform(points), offset))
 
   return ret
 
 def _make_shape(node, transform):
-  type = node.value
-  print type
+  if node.attributes.has_key('transform'):
+    tmat = _parse_transform(node.attributes['transform'].value)
+    transform = _mat33mul(transform, tmat)
 
-def _make_shape_from_path(node, transform):
-  tokens = _tokenize_d(node.attributes['d'].nodeValue)
-  is_loop, points = _parse_d(tokens)
+  node_type = node.tagName
+  if node_type == 'polygon':
+    points = _make_points_from_polygon(node)
+  elif node_type == 'path':
+    points = _make_points_from_path(node)
+  else:
+    raise Exception('Unimplemented shape type: {0}'.format(node_type))
 
   points = _apply_transform(points, transform)
 
   if not _is_counter_clockwise(points):
     points.reverse()
 
-  return (platform.Platform(points), (0,0))
+  return points
+
+def _make_points_from_polygon(node):
+  tokens = node.attributes['points'].nodeValue.split() # Split on whitespace
+  tail, points = _tokenize_points(tokens)
+
+  return points
+
+
+def _make_points_from_path(node):
+  tokens = _tokenize_d(node.attributes['d'].nodeValue)
+  is_loop, points = _parse_d(tokens)
+
+  return points
 
 def _make_bounds_from_svg(node, transform):
-  w = float(node.attributes['width' ].value)
-  h = float(node.attributes['height'].value)
+  w = float(_D(node.attributes['width' ].value))
+  h = float(_D(node.attributes['height'].value))
 
   points = [b2Vec2(0,0), b2Vec2(w, 0), b2Vec2(w, h), b2Vec2(0,h)]
   points = _apply_transform(points, transform)
@@ -246,7 +308,7 @@ def _tokenize_numbers(d):
     d, number = _tokenize_number(d)
     numbers.append(number)
 
-  return tail, numbers
+  return d, numbers
 
 def _tokenize_arcs(d):
   arcs = []
@@ -314,7 +376,6 @@ def _parse_transform_command(tokens):
   return tokens[1:], mat
 
 def _parse_translate(tokens):
-  print tokens
   if tokens[0] != '(':
     raise Exception('Expected ''(''')
 

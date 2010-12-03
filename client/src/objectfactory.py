@@ -7,23 +7,30 @@ import powerup
 import world
 import monkey
 import platform
+import gameobject
 
 class ObjectFactory(object):
   def __init__(self): super(ObjectFactory, self).__init__()
 
   def from_id(self, obj_id):
     if obj_id == monkey_id:
-      return object.__new__(monkey.Monkey)
+      ret = object.__new__(monkey.Monkey)
     elif obj_id == platform_id:
-      return object.__new__(platform.Platform)
+      ret = object.__new__(platform.Platform)
     elif obj_id == grab_id:
-      return object.__new__(grab.Grab)
+      ret = object.__new__(grab.Grab)
     elif obj_id == world_id:
-      return object.__new__(map.Map)
+      ret = object.__new__(world.World)
     elif obj_id == powerup_id:
-      return object.__new__(powerup.Powerup)
+      ret = object.__new__(powerup.Powerup)
     elif obj_id == projectile_id:
-      return object.__new__(powerup.Projectile)
+      ret = object.__new__(powerup.Projectile)
+    else:
+      raise Exception('Undefiened objectid {0}'.format(obj_id))
+
+    gameobject.GameObject.__init__(ret)
+
+    return ret
 
 # Singleton
 ObjectFactory = ObjectFactory()

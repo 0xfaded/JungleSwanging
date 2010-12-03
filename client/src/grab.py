@@ -33,10 +33,3 @@ class Grab(gameobject.GameObject):
   def from_network(self, msg):
     id = msg.pop()
 
-  def render(self):
-    """
-    Platforms are all rendered in the background image
-    The highlighting is done here
-    """
-    pass
-

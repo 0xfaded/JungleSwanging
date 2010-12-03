@@ -25,8 +25,9 @@ import gldebugdraw
 from settings import Settings
 
 # Initialise Display and GL
-SCREEN_SIZE = (800, 600)
+SCREEN_SIZE = (640, 480)
 
+pygame.init()
 screen = pygame.display.set_mode(SCREEN_SIZE, HWSURFACE|OPENGL|DOUBLEBUF)
 
 glViewport(0, 0, SCREEN_SIZE[0], SCREEN_SIZE[1])
@@ -110,7 +111,7 @@ clock = pygame.time.Clock()
 game_world = world.World()
 game_world.set_root(b2_world, contact_listener)
 
-game_world.read('map2.svg')
+game_world.read(sys.argv[1])
 
 
 powerup1  = powerup.PowerUp(0.25)
@@ -129,6 +130,8 @@ fps = 30
 active = True
 
 while active:
+  server.Server.iterate()
+
   delta_t = clock.tick(fps)
 
   events = []
@@ -168,9 +171,8 @@ while active:
   msg = ','.join(msg) + '\n';
   
   server.Server.broadcast(str(msg))
-  server.Server.iterate()
 
-
+  game_world.tree_render()
   debugdraw.draw()
 
 
@@ -179,4 +181,5 @@ while active:
 
   pygame.display.flip()
 
+server.shutdown()
 pygame.quit()

@@ -12,6 +12,8 @@ import gameobject
 import grab
 import platform
 
+import gamesprites
+
 from objectid import *
 
 import copy
@@ -405,22 +407,24 @@ class Monkey(gameobject.GameObject):
     rot = b2Mat22(self.body.angle)
     off = self.body.position
 
-    points = map(lambda x: b2Mul(rot,x) + off, self.points)
+    points = [(-0.4, 0.8), (-0.4,-0.8), (0.4,-0.8), (0.4, 0.8)]
+    points = map(lambda x: b2Mul(rot,x) + off, points)
 
+    
+    glColor3f(1,1,1)
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-    glColor3f(1, 0, 0)
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+    glEnable(GL_TEXTURE_2D)
+    gamesprites.GameSprites.bind()
 
+    tex_coords = gamesprites.GameSprites['monkey']
+
+    points = zip(points, tex_coords)
 
     glBegin(GL_POLYGON)
-    for (x,y) in points:
-      glVertex3f(x, y, 0)
-    glEnd()
-
-    glBegin(GL_LINES)
-    points = map(lambda x: b2Mul(rot,x) + off, [b2Vec2(0,0), b2Vec2(0, 0.05)])
-    for (x,y) in points:
-      glVertex3f(x, y, 0)
+    for ((px,py), (tx, ty)) in points:
+      glTexCoord2f(tx, ty)
+      glVertex3f(px, py, 0)
     glEnd()
 
   def _apply_stats(self, stats):
