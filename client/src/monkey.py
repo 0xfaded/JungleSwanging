@@ -35,11 +35,11 @@ class Monkey(gameobject.GameObject):
       self.density     = 1
 
       # Other Stats
-      self.ground_force_x       = 50 # Ground acceleration along the x axis
+      self.ground_force_x       = 30 # Ground acceleration along the x axis
       self.ground_force_y       =  0 # Ground acceleration along the y axis
 
       self.ground_impulse_x     =  0
-      self.ground_impulse_y     = 20 # Best thought as jump
+      self.ground_impulse_y     = 10 # Best thought as jump
 
       self.air_force_x          =  0 # Air acceleration along the x axis
       self.air_force_y          =  0 # Air acceleration along the y axis
@@ -53,7 +53,7 @@ class Monkey(gameobject.GameObject):
       self.hang_impulse_x       =  0
       self.hang_impulse_y       =  0 # Best thought as hang boost
 
-      self.max_landing_speed    = 5
+      self.max_landing_speed    = 20
       self.max_knock_impulse    = 20
 
       # if velocity < max_velocity: apply force
@@ -71,11 +71,11 @@ class Monkey(gameobject.GameObject):
     self.base_stats = Monkey.Stats()
     self.stats      = self.base_stats
 
-    self.boxDef = b2PolygonDef()
-    self.boxDef.SetAsBox(0.4, 0.4)
+    self.headDef = b2CircleDef()
+    self.headDef.radius = 0.60
 
-    self.circleDef = b2CircleDef()
-    self.circleDef.radius = 0.41
+    self.footDef = b2CircleDef()
+    self.footDef.radius = 0.20
 
     # Shoulder sensor is used for determining if a grab point is in range
     self.shoulderDef = b2CircleDef()
@@ -103,17 +103,14 @@ class Monkey(gameobject.GameObject):
     self.bodyDef.position = at
     self.body = self.world.CreateBody(self.bodyDef)
 
-    self.boxShape = self.body.CreateShape(self.boxDef)
-    self.boxShape = self.boxShape.asPolygon()
+    self.footDef.localPosition = (0, -0.6)
 
-    self.circleDef.localPosition = (0, -0.4)
-
-    self.foot_shape = self.body.CreateShape(self.circleDef)
+    self.foot_shape = self.body.CreateShape(self.footDef)
     self.foot_shape = self.foot_shape.asCircle()
 
-    self.circleDef.localPosition = (0, 0.4)
+    self.headDef.localPosition = (0, 0.2)
 
-    self.head_shape = self.body.CreateShape(self.circleDef)
+    self.head_shape = self.body.CreateShape(self.headDef)
     self.head_shape = self.head_shape.asCircle()
 
     self.shoulderDef.localPosition = (0.0 * self.direction, 0.4)
@@ -327,21 +324,11 @@ class Monkey(gameobject.GameObject):
     #
     # Return True if we handled the collision, False otherwise
 
-    # First reject hard landings
+    # Reject hard landings
     if self._will_land(result):
-      # Choose best dot from either new platform or existing contact
-      if self.platform_contact == None:
-        self.platform_contact = copy.copy(result)
-      else:
-        up = b2Vec2(0, 1)
-        old_dot = b2Dot(self.platform_contact.normal, up)
-        new_dot = b2Dot(result.normal, up)
-
-        if new_dot > old_dot:
-          self.platform_contact = copy.copy(result)
-
-      # If there is now an accepted platform, we are controlled
+      self.platform_contact = copy.copy(result)
       self.controlled = True
+
       return True
 
     return False
@@ -384,48 +371,83 @@ class Monkey(gameobject.GameObject):
     """
     Adjust force such that force is applied along platform
     """
-    i, j = self.platform_contact.normal
-    parallel = b2Vec2(-j, i)
 
-    if input_force.Length() != 0:
-      # Project the horizontal force vector onto a vector parallel
-      # to the normal (slope of platform)
-      input_force_i = b2Vec2(input_force.x, 0)
-      force_parallel = parallel * b2Dot(parallel, input_force)
+    if input_force.LengthSquared() != 0:
+      return input_force
 
+    # Applying a force along the platfrom has one slight problem
+    #
+    #    o   o
+    # ___^___^
+    #        \   o
+    #         \  ^
+    #
+    # Here the monkey goes air bourne. This is expected behaviour
+    # If the edge is very steep, however when going over slight bumps
+    # this is very bad. 
+    #
+    # The solution is to interperlate the angle force vector between
+    # the current platfrom and the next platform
 
-      # Recombine with vertical component
-      force = force_parallel + b2Vec2(0, input_force.y)
+    # Divide the current platform at its midpoint. If we are closest to
+    # the point on the left, interperlate with it. Same for right
+    v_contact = self.platform_contact.position
 
+    plat = self.platform_contact.shape2.asEdge()
+    plat_c = (plat.vertex1 + plat.vertex2) * 0.5
+
+    next_d = (v_contact - plat.vertex2).LengthSquared()
+    prev_d = (v_contact - plat.vertex1).LengthSquared()
+
+    if next_d < prev_d:
+      inter_plat = plat.next
+      v_common = inter_plat.vertex1
     else:
-      force = input_force
+      inter_plat = plat.prev
+      v_common = inter_plat.vertex2
+
+    # Only interperlate if the interplatform slope is less than 60 degrees
+    inter_plat_unit = inter_plat.vertex2 - inter_plat.vertex1
+    inter_plat_unit.Normalize()
+    inter_plat_norm = b2Vec2(inter_plat_unit.y, -inter_plat_unit.x)
+    horiz = b2Vec2(-1,0)
+    print b2Dot(inter_plat_unit, horiz)
+    if b2Dot(inter_plat_unit, horiz) > 0.5:
+      # Interperlate with the normal of the adjacent platform
+      inter_plat_norm = b2Vec2(inter_plat_unit.y, -inter_plat_unit.x)
+      plat_norm = self.platform_contact.normal
+
+      # Do a linear the interperlation
+      plat_d  = (plat_c - v_contact).Length()
+      inter_d = (v_common - v_contact).Length()
+      sum_d = plat_d + inter_d
+
+      norm = inter_plat_norm * (plat_d / sum_d) + plat_norm * (inter_d / sum_d)
+      norm.Normalize()
+    else:
+      norm = self.platform_contact.normal
+
+
+    # Project the horizontal force vector onto a vector parallel
+    # to the normal (slope of platform)
+    parallel = b2Vec2(norm.y, -norm.x)
+
+    print parallel
+
+    input_force_i = b2Vec2(input_force.x, 0)
+    force_parallel = parallel * b2Dot(parallel, input_force)
+
+    # Recombine with vertical component
+    force = force_parallel + b2Vec2(0, input_force.y)
 
     return force
 
   def render(self):
     # Calculate rendering coords
-    rot = b2Mat22(self.body.angle)
+    rot = self.body.angle
     off = self.body.position
 
-    points = [(-0.4, 0.8), (-0.4,-0.8), (0.4,-0.8), (0.4, 0.8)]
-    points = map(lambda x: b2Mul(rot,x) + off, points)
-
-    
-    glColor3f(1,1,1)
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-    glEnable(GL_TEXTURE_2D)
-    gamesprites.GameSprites.bind()
-
-    tex_coords = gamesprites.GameSprites['monkey']
-
-    points = zip(points, tex_coords)
-
-    glBegin(GL_POLYGON)
-    for ((px,py), (tx, ty)) in points:
-      glTexCoord2f(tx, ty)
-      glVertex3f(px, py, 0)
-    glEnd()
+    gamesprites.GameSprites.render_at_center('monkey', off, (1.6, 1.6), rot)
 
   def _apply_stats(self, stats):
     for shape in self.body.shapeList:
