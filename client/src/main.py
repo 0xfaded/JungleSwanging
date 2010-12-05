@@ -10,12 +10,6 @@ from Box2D import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-# Monkeys Imports
-import monkey 
-import grab 
-import powerup 
-import world 
-
 import contactlistener 
 
 import server 
@@ -25,7 +19,7 @@ import gldebugdraw
 from settings import Settings
 
 # Initialise Display and GL
-SCREEN_SIZE = (640, 480)
+SCREEN_SIZE = (1120, 840)
 
 pygame.init()
 screen = pygame.display.set_mode(SCREEN_SIZE, HWSURFACE|OPENGL|DOUBLEBUF)
@@ -67,6 +61,12 @@ glAlphaFunc(GL_GREATER, 0)
 glClearColor(0,0,0,0)
 glEnable(GL_BLEND)
 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+# Monkeys Imports
+import monkey 
+import grab 
+import powerup 
+import world 
 
 # Set up Box2d World
 
@@ -151,7 +151,7 @@ while active:
   glMatrixMode(GL_MODELVIEW)
   glLoadIdentity()
 
-  zoom = 0.1
+  zoom = 0.2
   glScale(zoom, zoom, 1)
 
   # center camera on monkey
@@ -169,17 +169,15 @@ while active:
 
   msg = map(str, msg)
   msg = ','.join(msg) + '\n';
-  
+
   server.Server.broadcast(str(msg))
 
   game_world.tree_render()
+
+  glDisable(GL_TEXTURE_2D)
   debugdraw.draw()
-
-
-  #monkey.render()
-  #jungle.render()
 
   pygame.display.flip()
 
-server.shutdown()
+Server.shutdown()
 pygame.quit()

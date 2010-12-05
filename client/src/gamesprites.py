@@ -4,8 +4,8 @@ import spritesheet
 
 class GameSprites(spritesheet.SpriteSheet):
   def __init__(self):
-    super(GameSprites, self).__init__((1000,1000))
-    self.add_sprite('monkey', 'wiki.svg', (100, 100), (100, 100))
+    super(GameSprites, self).__init__((1024,1024))
+    self.add_sprite('monkey', 'monkey.svg', (0, 0), (160, 160))
 
     self.set_texture()
 

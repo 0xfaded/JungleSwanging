@@ -2,12 +2,16 @@ from xml.dom.minidom import parse
 from Box2D import *
 import xml
 
+import os.path
+
 import gameobject
 
 import platform
 import powerup
 import grab
 import monkey
+
+import spritesheet
 
 from objectid import *
 
@@ -18,20 +22,34 @@ class ParseError(Exception):
 
 class World(gameobject.GameObject):
 
+  scale = 0.01
+  map_name = None
+
   def __init__(self):
     super(World, self).__init__()
 
   def to_network(self, msg):
     msg.append(world_id)
+    msg.append(self.map_name)
+    msg.append(self.size[0])
+    msg.append(self.size[1])
 
   def from_network(self, msg):
-    id    = msg.pop()
+    id       = msg.pop()
+    map_name = msg.pop()
+    width    = int(msg.pop())
+    height   = int(msg.pop())
 
-  def read(self, node):
+    if map_name != self.map_name:
+      self.size = (width, height)
+      self.load_sprite(map_name + '.svg')
+      self.map_name = map_name
+
+  def read(self, path):
     """Read a map from an svg file"""
-    # If we were passed a string, read it as a file
-    if isinstance(node, str):
-      node = parse(node)
+    node = parse(path)
+
+    self.map_name = os.path.splitext(path)[0]
 
     # If we were passed a full DOM Document instead of just
     # the an element, search for the svg element and use it
@@ -48,15 +66,15 @@ class World(gameobject.GameObject):
     transform = b2Mat33()
     transform.SetZero()
 
-    scale = 0.01
-
-    transform.col1.x = scale
-    transform.col2.y = -scale
+    transform.col1.x = self.scale
+    transform.col2.y = -self.scale
 
     height = float(_D(node.attributes['height'].value))
     width  = float(_D(node.attributes['width'].value))
 
-    transform.col3.y = height * scale
+    self.size = (int(width), int(height))
+
+    transform.col3.y = height * self.scale
     transform.col3.z = 1
 
     objs = []
@@ -81,6 +99,20 @@ class World(gameobject.GameObject):
 
     for obj, offset in objs:
       self.add_child(obj, offset)
+
+    self.load_sprite(path)
+
+  def load_sprite(self, path):
+    s = (b2NextPowerOfTwo(self.size[0]), b2NextPowerOfTwo(self.size[1]))
+
+    self.sprite = spritesheet.SpriteSheet(s)
+    self.sprite.add_sprite('world', path, (0, 0)) 
+    self.sprite.set_texture()
+
+  def render(self):
+    if self.map_name != None:
+      s = (self.size[0] * self.scale, self.size[1] * self.scale)
+      self.sprite.render_at('world', (0,0), s)
 
 
 #################################################################
@@ -224,11 +256,17 @@ def _parse_c(command, params, points):
     if not absolute:
       p = map(lambda x: points[-1] + x, p)
 
-
     # p0 = last point
     p.insert(0, points[-1])
 
-    b_points = calculate_bezier(p, 30)
+
+    # Number of segments we use is proportional to the distance
+    # The beizier spans.
+    # 100 pixels = 2 points
+    n_segments = (p[3] - p[0]).Length() / 5
+    n_points = int(n_segments) + 1
+
+    b_points = calculate_bezier(p, n_points)
 
     # Remove first point from the bezier, as it is already
     # represented in points. Then convert them into b2Vec2

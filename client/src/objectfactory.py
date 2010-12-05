@@ -22,7 +22,7 @@ class ObjectFactory(object):
     elif obj_id == world_id:
       ret = object.__new__(world.World)
     elif obj_id == powerup_id:
-      ret = object.__new__(powerup.Powerup)
+      ret = object.__new__(powerup.PowerUp)
     elif obj_id == projectile_id:
       ret = object.__new__(powerup.Projectile)
     else:

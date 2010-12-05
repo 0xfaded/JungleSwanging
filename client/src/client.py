@@ -1,6 +1,6 @@
 # vim:set sw=2 ts=2 sts=2 et:
+from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
-from twisted.internet.protocol import Protocol, ClientFactory
 
 import sys
 import time
@@ -58,58 +58,66 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 # Import monkey stuff after initializing opengl
 import objectfactory
 import objectid
+
+import keymap
+
 # End monkey imports
 
 monkey     = objectfactory.ObjectFactory.from_id(objectid.monkey_id)
 monkey.from_network(['0', '0', '0', '0'])
 
-game_world = None
+game_world = objectfactory.ObjectFactory.from_id(objectid.world_id)
 active = True
 
-class ClientProtocol(Protocol):
-  def __init__(self):
-    self.last_message = ''
+host = 'localhost'
+host_port = 8007
+client_port = 9999
 
-  def dataReceived(self, data):
+if len(sys.argv) >= 2:
+  host = sys.argv[1]
+if len(sys.argv) >= 3:
+  host_port = int(sys.argv[2])
+if len(sys.argv) >= 4:
+  client_port = int(sys.argv[3])
+
+class ClientProtocol(DatagramProtocol):
+
+  def datagramReceived(self, data, address):
     global game_world
 
-    msgs = self.last_message + data
-    msgs = msgs.split('\n')
+    msg = data.strip().split(',')
+    msg.reverse()
 
-    self.last_msg = msgs[-1]
+    game_world.children = []
+    game_world.tree_from_network(msg)
 
-    latest_msg = msgs[-2].split(',')
-    latest_msg.reverse()
+client = ClientProtocol()
 
-    game_world = objectfactory.ObjectFactory.from_id(objectid.world_id)
-    game_world.tree_from_network(latest_msg)
-
-class ClientProtocolFactory(ClientFactory):
-  def startedConnecting(self, connector):
-    print 'Started to connect.'
-
-  def buildProtocol(self, addr):
-    print 'Connected.'
-    return ClientProtocol()
-
-  def clientConnectionLost(self, connector, reason):
-    global active
-    print 'Lost connection.  Reason:', reason
-    active = False
-
-  def clientConnectionFailed(self, connector, reason):
-    print 'Connection failed. Reason:', reason
-
-client = ClientProtocolFactory()
-reactor.connectTCP('localhost', 8007, client)
+reactor.listenUDP(client_port, client)
 reactor.fireSystemEvent('startup')
 
 fps = 30
 clock = pygame.time.Clock()
 
+sequence_number = 0
+
+keys = keymap.KeyMap()
+
 try:
   while active:
     delta_t = clock.tick(fps)
+
+    msg = [sequence_number]
+    sequence_number += 1
+
+    keys.read_keys(pygame.key.get_pressed())
+    keys.to_network(msg)
+
+    msg = map(str, msg)
+    msg = ','.join(msg)
+
+    client.transport.write(msg, (host, host_port))
+
     reactor.iterate(0)
 
     if game_world == None:
@@ -125,8 +133,6 @@ try:
         if event.unicode == 'q':
           active = False
 
-    #keys = pygame.key.get_pressed()
-
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
     glMatrixMode(GL_MODELVIEW)
@@ -139,8 +145,8 @@ try:
 
     pygame.display.flip()
 
-except:
-  pass
+except Exception as e:
+  print e
 
 reactor.fireSystemEvent('shutdown')
 pygame.quit()
