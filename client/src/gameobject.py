@@ -71,12 +71,12 @@ class GameObject(object):
   def add_to_world(self, at):
     pass
 
-  def update_tree(self, controller, delta_t):
+  def update_tree(self, delta_t):
     for child in self.children:
-      child.update_tree(controller, delta_t)
-      child.update(controller, delta_t)
+      child.update_tree(delta_t)
+      child.update(delta_t)
 
-  def update(self, controller, delta_t):
+  def update(self, delta_t):
     pass
 
   def get_root(self):
@@ -85,6 +85,17 @@ class GameObject(object):
       root = root.parent
 
     return root
+
+  def children_of_type(self, class_type):
+    ret = []
+    for child in self.children:
+      if isinstance(child, class_type):
+        ret.append(child)
+
+    for child in self.children:
+      ret += child.children_of_type(class_type)
+
+    return ret
 
   def tree_to_network(self, msg):
     """
@@ -127,7 +138,7 @@ class GameObject(object):
   def tree_render(self):
     self.render()
     for child in self.children:
-      child.render()
+      child.tree_render()
 
   def render(self):
     pass

@@ -38,9 +38,6 @@ class Server(DatagramProtocol):
 
       client.keys.from_network(msg)
 
-      print client.keys.active
-      print client.keys.events
-
 
   def iterate(self, step=0):
     self.reactor.iterate(step)

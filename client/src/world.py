@@ -11,7 +11,7 @@ import powerup
 import grab
 import monkey
 
-import spritesheet
+import pngspritesheet
 
 from objectid import *
 
@@ -105,8 +105,8 @@ class World(gameobject.GameObject):
   def load_sprite(self, path):
     s = (b2NextPowerOfTwo(self.size[0]), b2NextPowerOfTwo(self.size[1]))
 
-    self.sprite = spritesheet.SpriteSheet(s)
-    self.sprite.add_sprite('world', path, (0, 0)) 
+    self.sprite = pngspritesheet.PNGSpriteSheet(self.map_name + '.png')
+    self.sprite.add_sprite('world', path, (0, 0), self.sprite.size) 
     self.sprite.set_texture()
 
   def render(self):
@@ -142,17 +142,52 @@ def _handle_group(node, transform):
     if klass == None:
       continue
 
-    if child.tagName in ['rect', 'path', 'polygon']:
-      if klass in ['platform', 'bounds']:
-        points = _make_shape(child, transform)
+    if klass in ['platform', 'bounds']:
+      points = _make_shape(child, transform)
 
-        if klass == 'bounds':
-          points.reverse()
+      if klass == 'bounds':
+        points.reverse()
 
-        offset = (0,0)
-        ret.append((platform.Platform(points), offset))
+      offset = (0,0)
+      ret.append((platform.Platform(points), offset))
+
+    elif klass == 'grab':
+      p, r = _make_grab(child, transform)
+
+      ret.append((grab.Grab(r.Length()), p))
 
   return ret
+
+def _make_grab(node, transform):
+  if node.attributes.has_key('transform'):
+    tmat = _parse_transform(node.attributes['transform'].value)
+
+    transform = _mat33mul(transform, tmat)
+
+  node_type = node.tagName
+  if node_type == 'path':
+    p, r = _make_grab_from_path(node)
+  else:
+    raise Exception('Unimplemented shape grab: {0}'.format(node_type))
+
+  # remove the transform on r, keep the scale
+  p, r, origin = _apply_transform([p, r, b2Vec2(0, 0)], transform)
+  r = r - origin
+
+  return p, r
+  
+def _make_grab_from_path(node):
+  tokens = _tokenize_d(node.attributes['d'].nodeValue)
+  if tokens[0][0] != 'm' or tokens[1][0] != 'a':
+    raise Excetpion('Grab from path only implemented for Arcs')
+
+  m = tokens[0][1][0]
+  a = tokens[1][1][0]
+
+  radius   = a.r.x
+  position = m + a.target * 0.5
+
+  return position, b2Vec2(radius, 0)
 
 def _make_shape(node, transform):
   if node.attributes.has_key('transform'):
@@ -262,8 +297,8 @@ def _parse_c(command, params, points):
 
     # Number of segments we use is proportional to the distance
     # The beizier spans.
-    # 100 pixels = 2 points
-    n_segments = (p[3] - p[0]).Length() / 5
+    # 100 pixels = 4 points
+    n_segments = (p[3] - p[0]).Length() / 25
     n_points = int(n_segments) + 1
 
     b_points = calculate_bezier(p, n_points)
@@ -314,23 +349,21 @@ def _tokenize_number(d):
   return d[1:], number
 
 class ArcDef(object):
-  def __init__(r, x_axis_rotation, large_arc_flag, center, sweep_flag, p):
+  def __init__(self, r, x_axis_rotation, large_arc_flag, sweep_flag, target):
     self.r               = r
     self.x_axis_rotation = x_axis_rotation
     self.large_arc_flag  = large_arc_flag
-    self.center          = center
+    self.target          = target
     self.sweep_flag      = sweep_flag
-    self.p               = p
 
 def _tokenize_arc(d):
   tail, r               = _tokenize_point(d)
   tail, x_axis_rotation = _tokenize_number(tail)
-  tail, large_arc_flag  = _tokenize_point(tail)
-  tail, center          = _tokenize_point(tail)
+  tail, large_arc_flag  = _tokenize_number(tail)
   tail, sweep_flag      = _tokenize_number(tail)
-  tail, p               = _tokenize_point(tail)
+  tail, target          = _tokenize_point(tail)
 
-  return tail, ArcDef(r, x_axis_rotation, large_arg_flag, center, sweep_flag, p)
+  return tail, ArcDef(r, x_axis_rotation, large_arc_flag, sweep_flag, target)
 
 def _tokenize_points(d):
   points = []
@@ -407,9 +440,13 @@ def _parse_transform_command(tokens):
   command = tokens[0]
   if command.lower() == 'translate':
     tokens, mat = _parse_translate(tokens[1:])
+  elif command.lower() == 'matrix':
+    tokens, mat = _parse_transform_matrix(tokens[1:])
+  elif command.lower() == 'scale':
+    tokens, mat = _parse_scale(tokens[1:])
 
   else:
-    raise NotImplementedError('{0} transform not implemented'.format(d[0]))
+    raise NotImplementedError('{0} transform not implemented'.format(command))
 
   return tokens[1:], mat
 
@@ -430,6 +467,56 @@ def _parse_translate(tokens):
   xform = b2XForm()
   xform.position.x, xform.position.y = x,y
   xform.R.SetIdentity()
+
+  mat = _xform_to_mat33(xform)
+
+  return tokens[1:], mat
+
+def _parse_scale(tokens):
+  if tokens[0] != '(':
+    raise Exception('Expected ''(''')
+
+  tokens, x = _tokenize_number(tokens[1:])
+
+  if tokens[0] == ')':
+    y = 1
+  else:
+    tokens, y = _tokenize_number(tokens)
+
+  if tokens[0] != ')':
+    raise Exception('Expected '')''')
+
+  xform = b2XForm()
+  xform.position.x, xform.position.y = 0, 0
+
+  xform.R.SetIdentity()
+  xform.R.col1.x = x
+  xform.R.col2.y = y
+
+  mat = _xform_to_mat33(xform)
+
+  return tokens[1:], mat
+def _parse_transform_matrix(tokens):
+  if tokens[0] != '(':
+    raise Exception('Expected ''(''')
+
+  tokens, a = _tokenize_number(tokens[1:])
+  tokens, b = _tokenize_number(tokens)
+  tokens, c = _tokenize_number(tokens)
+  tokens, d = _tokenize_number(tokens)
+
+  tokens, x = _tokenize_number(tokens)
+  tokens, y = _tokenize_number(tokens)
+
+  if tokens[0] != ')':
+    raise Exception('Expected '')''')
+
+  xform = b2XForm()
+
+  xform.R.col1.x, xform.R.col1.y = a,c
+  xform.R.col2.x, xform.R.col2.y = b,d
+
+  xform.position.x, xform.position.y = x,y
 
   mat = _xform_to_mat33(xform)
 

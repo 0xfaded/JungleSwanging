@@ -11,14 +11,23 @@ from Box2D import *
 import gameobject
 import grab
 import platform
+import beachballofdeath
 
 import gamesprites
+
+import pathfinder
+
 
 from objectid import *
 
 import copy
 
+# Global counter used as seed for player ids
+_player_id = 1
+
 class Monkey(gameobject.GameObject):
+
+  shoulder_offset = (0.15, -0.2)
 
   class Stats(object):
     """
@@ -60,10 +69,15 @@ class Monkey(gameobject.GameObject):
       self.max_ground_velocity  =  10
       self.max_air_velocity     =  2
 
-  def __init__(self):
+  def __init__(self, controller):
+    global _player_id
+
     super(Monkey, self).__init__()
 
     self.t = 0
+    self.controller = controller
+    self.player_id = _player_id
+    _player_id += 1
 
     # Note we do not need to set any properties of the monkey's shapes
     # as all properties in stats are applied to the entire monkey
@@ -73,14 +87,17 @@ class Monkey(gameobject.GameObject):
 
     self.headDef = b2CircleDef()
     self.headDef.radius = 0.60
+    self.headDef.filter.groupIndex = -self.player_id
 
     self.footDef = b2CircleDef()
     self.footDef.radius = 0.20
+    self.footDef.filter.groupIndex = -self.player_id
 
     # Shoulder sensor is used for determining if a grab point is in range
     self.shoulderDef = b2CircleDef()
     self.shoulderDef.radius = 0
     self.shoulderDef.isSensor = True
+    self.shoulderDef.filter.groupIndex = -self.player_id
 
     self.bodyDef = b2BodyDef()
     self.bodyDef.angle = 0.0
@@ -90,6 +107,9 @@ class Monkey(gameobject.GameObject):
     self.platform_contact = None
     self.grab_contact = None
     self.grab_joint = None
+
+    # Targeting
+    self.parabola = None
 
     # Body.GetFixedRotation() is buggy, so we need to store our own
     self.fixedRotation = True
@@ -113,7 +133,7 @@ class Monkey(gameobject.GameObject):
     self.head_shape = self.body.CreateShape(self.headDef)
     self.head_shape = self.head_shape.asCircle()
 
-    self.shoulderDef.localPosition = (0.0 * self.direction, 0.4)
+    self.shoulderDef.localPosition = (self.shoulder_offset)
 
     self.shoulder_shape = self.body.CreateShape(self.shoulderDef)
     self.shoulder_shape = self.shoulder_shape.asCircle()
@@ -149,12 +169,15 @@ class Monkey(gameobject.GameObject):
     self.body = dummy
 
 
-  def update(self, controller, delta_t):
-    keys, events = controller
+  def update(self, delta_t):
+    keys, events = self.controller.active, self.controller.events
 
     # Update the monkey with the latest stats
     stats = self.stats
     #self._apply_stats(stats)
+
+    # Find the most up to date target before trying to read input
+    self._find_target()
 
     # Calculate the force vector to apply in the left or right direction
     force = b2Vec2(0, 0)
@@ -164,13 +187,13 @@ class Monkey(gameobject.GameObject):
     impulse_basis = b2Vec2(0,0)
 
     # Left Right movement
-    if keys[K_LEFT]:
+    if keys.has_key(K_LEFT):
       force_basis += b2Vec2(-1,  0)
-    if keys[K_RIGHT]:
+    if keys.has_key(K_RIGHT):
       force_basis += b2Vec2( 1,  0)
-    if keys[K_UP]:
+    if keys.has_key(K_UP):
       force_basis += b2Vec2( 0,  1)
-    if keys[K_DOWN]:
+    if keys.has_key(K_DOWN):
       force_basis += b2Vec2( 0, -1)
 
 
@@ -178,6 +201,8 @@ class Monkey(gameobject.GameObject):
       if event.type == pygame.KEYDOWN:
         if event.key == K_SPACE:
           self._attempt_grab()
+        if event.key == K_LCTRL:
+          self._attempt_fire()
         if event.key == K_LEFT:
           impulse_basis += b2Vec2(-1,  0)
         if event.key == K_RIGHT:
@@ -191,13 +216,13 @@ class Monkey(gameobject.GameObject):
     if self.body.linearVelocity.Length() < 0.01:
       self.controlled = True
 
-      force += b2Vec2(force_basis.x, 0) * stats.hang_force_x
-      force += b2Vec2(0, force_basis.y) * stats.hang_force_y
-
     # Check if the monkey has returned to the ground
     #   If velocity is reasonable, return to standing state
     #   Otherwise put into uncontrolled state
     if self._is_hanging():
+      force += b2Vec2(force_basis.x, 0) * stats.hang_force_x
+      force += b2Vec2(0, force_basis.y) * stats.hang_force_y
+
       if self.state != 'hanging':
         self.state = 'hanging'
         self._set_controlled(True)
@@ -256,6 +281,29 @@ class Monkey(gameobject.GameObject):
       force = b2Mul(b2Mat22(self.body.angle), force)
       self.body.ApplyImpulse(impulse, self.body.position)
 
+  def _find_target(self):
+    targets = self.get_root().children_of_type(Monkey)
+    targets.sort(key=lambda m: -m.body.position.y)
+
+    source_pos  = self.body.position
+    source_body = self.body
+    v0_max = 5
+
+    for target in targets:
+      if target is self:
+        continue
+
+      target_pos  = target.body.position
+      target_body = target.body
+
+      parabola = pathfinder.find_parabola(self.world, target_body, source_body,
+                                          target_pos, source_pos, v0_max, 0.4)
+
+      if parabola:
+        break
+
+    self.parabola = parabola
+
   def _set_contact_callbacks(self):
     self.add_callback(self.on_platform_pre_land, 'Add',
                       self.foot_shape, platform.Platform)
@@ -272,11 +320,46 @@ class Monkey(gameobject.GameObject):
                       self.shoulder_shape, grab.Grab)
 
   def on_platform_leave(self, contact):
-    if self.platform_contact == None:
-      return
+    # One of two things happened here, we either jumped off the platform
+    # or fell off the platform. If we are running along a slightly bumpy
+    # platform, we dont want slight bumps to send us airbourne.
+    #
+    # To counter this, if there is an adjacent edge on the platform
+    # that is relatively flat, we play with the physics to ensure that
+    # we keep running along it
 
-    if contact.shape2.this == self.platform_contact.shape2.this:
+    # Only perform the hack if the monkey did not deliberately jump and
+    # was not somehow hit (by projectile or another monkey)
+#    self.did_jump = False
+#    self.was_hit = False
+#    if not (self.did_jump or self.was_hit):
+#      # Work out which side of the platform we went off
+#      cur_plat = self.platform_contact.shape2.asEdge()
+#      next_d   = (cur_plat.vertex2 - contact.position).LengthSquared()
+#      prev_d   = (cur_plat.vertex1 - contact.position).LengthSquared()
+#
+#      print next_d, prev_d
+#      if prev_d < next_d:
+#        adj_plat = cur_plat.prev
+#        dir = -1
+#      else:
+#        adj_plat = cur_plat.next
+#        dir = 1
+#
+#      plat_unit = adj_plat.vertex2 - adj_plat.vertex1
+#      plat_unit.Normalize()
+#
+#      old_vel = self.body.linearVelocity
+#      print plat_unit, dir, old_vel.Length()
+#      self.body.linearVelocity = plat_unit * dir * old_vel.Length()
+#
+
+    if self.platform_contact == None:
+      pass
+
+    elif contact.shape2.this == self.platform_contact.shape2.this:
       self.platform_contact = None
+
 
   def on_grab_touch(self, contact):
     # Maintain the closest grab point
@@ -333,6 +416,12 @@ class Monkey(gameobject.GameObject):
 
     return False
 
+  def _attempt_fire(self):
+    if self.parabola:
+      beachball = beachballofdeath.BeachBallOfDeath()
+      beachball.set_init_velocity(self.parabola)
+      self.add_child(beachball, (0,0))
+
   def _attempt_grab(self):
     world = self.body.GetWorld()
 
@@ -372,7 +461,7 @@ class Monkey(gameobject.GameObject):
     Adjust force such that force is applied along platform
     """
 
-    if input_force.LengthSquared() != 0:
+    if input_force.LengthSquared() == 0:
       return input_force
 
     # Applying a force along the platfrom has one slight problem
@@ -391,48 +480,50 @@ class Monkey(gameobject.GameObject):
 
     # Divide the current platform at its midpoint. If we are closest to
     # the point on the left, interperlate with it. Same for right
-    v_contact = self.platform_contact.position
-
-    plat = self.platform_contact.shape2.asEdge()
-    plat_c = (plat.vertex1 + plat.vertex2) * 0.5
-
-    next_d = (v_contact - plat.vertex2).LengthSquared()
-    prev_d = (v_contact - plat.vertex1).LengthSquared()
-
-    if next_d < prev_d:
-      inter_plat = plat.next
-      v_common = inter_plat.vertex1
-    else:
-      inter_plat = plat.prev
-      v_common = inter_plat.vertex2
-
-    # Only interperlate if the interplatform slope is less than 60 degrees
-    inter_plat_unit = inter_plat.vertex2 - inter_plat.vertex1
-    inter_plat_unit.Normalize()
-    inter_plat_norm = b2Vec2(inter_plat_unit.y, -inter_plat_unit.x)
-    horiz = b2Vec2(-1,0)
-    print b2Dot(inter_plat_unit, horiz)
-    if b2Dot(inter_plat_unit, horiz) > 0.5:
-      # Interperlate with the normal of the adjacent platform
-      inter_plat_norm = b2Vec2(inter_plat_unit.y, -inter_plat_unit.x)
-      plat_norm = self.platform_contact.normal
-
-      # Do a linear the interperlation
-      plat_d  = (plat_c - v_contact).Length()
-      inter_d = (v_common - v_contact).Length()
-      sum_d = plat_d + inter_d
-
-      norm = inter_plat_norm * (plat_d / sum_d) + plat_norm * (inter_d / sum_d)
-      norm.Normalize()
-    else:
-      norm = self.platform_contact.normal
+#    v_contact = self.platform_contact.position
+#
+#    plat = self.platform_contact.shape2.asEdge()
+#    plat_c = (plat.vertex1 + plat.vertex2) * 0.5
+#
+#    next_d = (v_contact - plat.vertex2).LengthSquared()
+#    prev_d = (v_contact - plat.vertex1).LengthSquared()
+#
+#    if next_d < prev_d:
+#      inter_plat = plat.next
+#      v_common = inter_plat.vertex1
+#    else:
+#      inter_plat = plat.prev
+#      v_common = inter_plat.vertex2
+#
+#    # Only interperlate if the interplatform slope is less than 60 degrees
+#    inter_plat_unit = inter_plat.vertex2 - inter_plat.vertex1
+#    inter_plat_unit.Normalize()
+#    inter_plat_norm = b2Vec2(inter_plat_unit.y, -inter_plat_unit.x)
+#    horiz = b2Vec2(-1,0)
+#    print b2Dot(inter_plat_unit, horiz)
+#    if b2Dot(inter_plat_unit, horiz) > 0.5:
+#      # Interperlate with the normal of the adjacent platform
+#      inter_plat_norm = b2Vec2(inter_plat_unit.y, -inter_plat_unit.x)
+#      plat_norm = self.platform_contact.normal
+#
+#      # Do a linear the interperlation
+#      plat_d  = (plat_c - v_contact).Length()
+#      inter_d = (v_common - v_contact).Length()
+#      sum_d = plat_d + inter_d
+#
+#      norm = inter_plat_norm * (plat_d / sum_d) + plat_norm * (inter_d / sum_d)
+#      norm.Normalize()
+#    else:
+#      norm = self.platform_contact.normal
 
 
     # Project the horizontal force vector onto a vector parallel
     # to the normal (slope of platform)
-    parallel = b2Vec2(norm.y, -norm.x)
 
-    print parallel
+    # This line undoes the interp stuff
+    norm = self.platform_contact.normal
+
+    parallel = b2Vec2(norm.y, -norm.x)
 
     input_force_i = b2Vec2(input_force.x, 0)
     force_parallel = parallel * b2Dot(parallel, input_force)
@@ -443,11 +534,59 @@ class Monkey(gameobject.GameObject):
     return force
 
   def render(self):
+    if self.parabola:
+      self.parabola.plot()
+
     # Calculate rendering coords
     rot = self.body.angle
     off = self.body.position
+    shoulder_offset = b2Vec2(self.shoulder_offset)
 
+    # Body
     gamesprites.GameSprites.render_at_center('monkey', off, (1.6, 1.6), rot)
+
+    # Grab Arm 
+    if self.grab_joint:
+      grab_hand_pos = self.grab_joint.body2.position
+    else:
+      grab_hand_pos = b2Vec2(0.2, -0.2) + shoulder_offset
+      grab_hand_pos = self.body.GetWorldPoint(grab_hand_pos)
+    
+    grab_shoulder_pos = self.body.GetWorldPoint(shoulder_offset)
+    grab_arm = grab_hand_pos - grab_shoulder_pos
+    points = self._render_fatten_vector(grab_arm, 0.05)
+    points = map(lambda x: x + grab_shoulder_pos, points)
+
+    gamesprites.GameSprites.render_points('monkey_arm', points)
+
+    # Item Arm
+    shoulder_offset.x = -shoulder_offset.x
+
+    item_hand_pos = b2Vec2(-0.2, -0.2) + shoulder_offset
+    item_hand_pos = self.body.GetWorldPoint(item_hand_pos)
+
+    item_shoulder_pos = self.body.GetWorldPoint(shoulder_offset)
+    item_arm = item_hand_pos - item_shoulder_pos
+    points = self._render_fatten_vector(item_arm, 0.05)
+    points = map(lambda x: x + item_shoulder_pos, points)
+
+    gamesprites.GameSprites.render_points('monkey_arm', points)
+
+  def _render_fatten_vector(self, vector, fatness):
+    unit = vector.copy()
+    unit.Normalize()
+    unit *= fatness
+    perp = (unit.y, -unit.x) 
+
+    points = []
+
+    points.append(-unit - perp)
+    points.append(-unit + perp)
+
+    points.append(vector + unit + perp)
+    points.append(vector + unit - perp)
+
+    return points
 
   def _apply_stats(self, stats):
     for shape in self.body.shapeList:
@@ -477,7 +616,7 @@ class Monkey(gameobject.GameObject):
     body_pos = foot_pos - self.foot_shape.localPosition
 
     # Remove velocity perpendicular to platform
-    perp_vel = b2Dot(self.platform_contact.normal, self.body.linearVelocity)
+    perp_vel = b2Dot(self.platform_contact.normal, self.body.linearVelocity)   
     perp_vel *= self.platform_contact.normal
 
     # Update the engine

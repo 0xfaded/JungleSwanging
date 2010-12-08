@@ -10,10 +10,6 @@ import monkey
 
 from objectid import *
 
-class Projectile(gameobject.GameObject):
-  def __init__(self, radius):
-    super(GameObject, self).__init__();
-
 class PowerUp(gameobject.GameObject):
 
   def __init__(self, radius):
@@ -65,7 +61,7 @@ class PowerUp(gameobject.GameObject):
     self.body = dummy
 
 
-  def update(self, controller, delta_t):
+  def update(self, delta_t):
     if self.destroyMe:
       self.kill_me()
 

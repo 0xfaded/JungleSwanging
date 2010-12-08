@@ -3,9 +3,6 @@
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-import cairo
-import rsvg
-
 import pygame
 from pygame.locals import *
 
@@ -14,14 +11,12 @@ import math
 
 from Box2D import *
 
-class SpriteSheet(object):
-  def __init__(self, size):
-    super(SpriteSheet, self).__init__()
-    self.size = size
+class PNGSpriteSheet(object):
+  def __init__(self, name):
+    super(PNGSpriteSheet, self).__init__()
     self.coords = {}
 
-    self.surface = self.make_surface(size)
-    self.texture_id = None
+    (self.texture_id, self.size) = self.load_image(name)
 
   #def __del__(self):
     #if self.texture_id != None:
@@ -80,7 +75,6 @@ class SpriteSheet(object):
     glClearColor(0,0,0,0)
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
     self.bind()
 
     glBegin(GL_POLYGON)
@@ -100,60 +94,34 @@ class SpriteSheet(object):
 
     w,h = self.size
     tex_coords = map(lambda (x,y): (float(x)/w, float(y)/h), tex_coords)
-
     self.coords[name] = tex_coords
 
     return size
 
-  def make_surface(self, (width, height)):
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-    cr = cairo.Context(surface)
-    
-    cr.save()
-
-    # Clear everything
-    cr.set_source_rgba(0, 0, 0, 0)
-    cr.set_operator(cairo.OPERATOR_SOURCE)
-    cr.paint()
-
-    cr.restore()
-
-    return surface
-
   def load_svg_at(self, path, at, size = None):
-
-    svg = rsvg.Handle(path)
-
-    cr = cairo.Context(self.surface)
-    cr.translate(*at)
-
-    if size != None:
-      xscale = float(size[0]) / svg.props.width
-      yscale = float(size[1]) / svg.props.height
-      cr.scale(xscale, yscale)
-
-    else:
-      size = (svg.props.width, svg.props.height)
-
-    svg.render_cairo(cr)
-
     return size
 
   def set_texture(self):
-    self.texture_id = glGenTextures(1)
-
-    width = self.surface.get_width()
-    height = self.surface.get_height()
- 
-    data = str(self.surface.get_data())
-
-    glEnable(GL_TEXTURE_2D)
-    glBindTexture(GL_TEXTURE_2D, self.texture_id)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA,
-        GL_UNSIGNED_BYTE, data)
+    pass
 
   def bind(self):
     glBindTexture(GL_TEXTURE_2D, self.texture_id)
+
+  def load_image(self, image):
+    textureSurface = pygame.image.load(image)
+    textureSurface = pygame.transform.flip(textureSurface, False, True)
+ 
+    textureData = pygame.image.tostring(textureSurface, "RGBA", 1)
+ 
+    width = textureSurface.get_width()
+    height = textureSurface.get_height()
+ 
+    texture = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, texture)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+        GL_UNSIGNED_BYTE, textureData)
+ 
+    return texture, (width, height)
 

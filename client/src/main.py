@@ -68,6 +68,10 @@ import grab
 import powerup 
 import world 
 
+import keymap
+
+import pathfinder
+
 # Set up Box2d World
 
 # Bounding Box for the world
@@ -114,13 +118,15 @@ game_world.set_root(b2_world, contact_listener)
 game_world.read(sys.argv[1])
 
 
-powerup1  = powerup.PowerUp(0.25)
-grab1     = grab.Grab(3)
-monkey1   = monkey.Monkey()
+controller = keymap.KeyMap()
+
+monkey1   = monkey.Monkey(controller)
+monkey2   = monkey.Monkey(keymap.KeyMap())
+monkey3   = monkey.Monkey(keymap.KeyMap())
 
 game_world.add_child(monkey1, (2,5))
-game_world.add_child(grab1, (17, 14))
-game_world.add_child(powerup1, (2, 8))
+game_world.add_child(monkey2, (8,10))
+game_world.add_child(monkey3, (3,18))
 
 def crop_angle(angle):
   """Take an arbitary angle, and return that angle between pi and -pi"""
@@ -144,7 +150,7 @@ while active:
       if event.unicode == 'q':
         active = False
 
-  keys = pygame.key.get_pressed()
+  controller.read_keys(pygame.key.get_pressed())
 
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
@@ -162,7 +168,7 @@ while active:
 
   b2_world.Step(1.0/fps, 10, 8)
 
-  game_world.update_tree((keys, events), delta_t) 
+  game_world.update_tree(delta_t) 
 
   msg = []
   game_world.tree_to_network(msg)
@@ -179,5 +185,5 @@ while active:
 
   pygame.display.flip()
 
-Server.shutdown()
+server.Server.shutdown()
 pygame.quit()

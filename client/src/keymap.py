@@ -14,11 +14,14 @@ class KeyMap(object):
     return self.active[key]
 
   def read_keys(self, keys):
+    last_active = self.active
     self.active = {}
 
     for k in xrange(len(keys)):
       if keys[k]:
         self.active[k] = True
+
+    self._gen_events(last_active, self.active)
 
   def to_network(self, msg):
     msg.append(len(self.active))
@@ -26,8 +29,6 @@ class KeyMap(object):
       msg.append(k)
 
   def from_network(self, msg):
-    self.events = []
-
     last_active = self.active
     self.active = {}
 
@@ -36,12 +37,17 @@ class KeyMap(object):
       k = int(msg.pop())
       self.active[k] = True
 
+    self._gen_events(last_active, self.active)
+
+  def _gen_events(self, last_active, active):
+    self.events = []
+
     for k in last_active:
-      if not self.active.has_key(k):
+      if not active.has_key(k):
         e = pygame.event.Event(pygame.KEYUP, {'unicode':unichr(k), 'key':k})
         self.events.append(e)
 
-    for k in self.active:
+    for k in active:
       if not last_active.has_key(k):
         e = pygame.event.Event(pygame.KEYDOWN, {'unicode':unichr(k), 'key':k})
         self.events.append(e)
