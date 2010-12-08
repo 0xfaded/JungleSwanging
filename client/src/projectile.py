@@ -74,3 +74,7 @@ class Projectile(gameobject.GameObject):
     y     = float(msg.pop())
     angle = float(msg.pop())
 
+    self.body = b2BodyDef()
+    self.body.position = (x,y)
+    self.body.angle = angle
+

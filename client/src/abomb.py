@@ -6,6 +6,8 @@ from Box2D import *
 import effect
 import gamesprites
 
+from objectid import *
+
 class ABomb(effect.Effect):
 
   def __init__(self):
@@ -16,7 +18,7 @@ class ABomb(effect.Effect):
     super(ABomb, self).__init__(750)
 
   def to_network(self, msg):
-    msg.append(1000)
+    msg.append(abomb_id)
     super(ABomb, self).to_network(msg)
 
   def from_network(self, msg):

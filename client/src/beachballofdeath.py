@@ -38,12 +38,14 @@ class BeachBallOfDeath(projectile.Projectile):
     self.bounces += 1
 
   def to_network(self, msg):
-    msg.append(100)
+    msg.append(beachball_id)
     super(BeachBallOfDeath, self).to_network(msg)
 
   def from_network(self, msg):
     id    = msg.pop()
-    super(BeachBallOfDeath, self).to_from(msg)
+    super(BeachBallOfDeath, self).from_network(msg)
+
+    self.radius = 0.5
 
   def render(self):
     rot = self.body.angle

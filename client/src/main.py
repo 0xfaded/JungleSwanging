@@ -10,10 +10,6 @@ from Box2D import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-import contactlistener 
-
-import server 
-
 # Temporary debugging stuff
 import gldebugdraw
 from settings import Settings
@@ -68,6 +64,9 @@ import grab
 import powerup 
 import world 
 
+import contactlistener 
+import server 
+
 import keymap
 
 import pathfinder
@@ -121,12 +120,8 @@ game_world.read(sys.argv[1])
 controller = keymap.KeyMap()
 
 monkey1   = monkey.Monkey(controller)
-monkey2   = monkey.Monkey(keymap.KeyMap())
-monkey3   = monkey.Monkey(keymap.KeyMap())
 
 game_world.add_child(monkey1, (2,5))
-game_world.add_child(monkey2, (8,10))
-game_world.add_child(monkey3, (3,18))
 
 def crop_angle(angle):
   """Take an arbitary angle, and return that angle between pi and -pi"""
@@ -136,9 +131,21 @@ fps = 30
 active = True
 
 while active:
+  delta_t = clock.tick(fps)
   server.Server.iterate()
 
-  delta_t = clock.tick(fps)
+  for new_monkey in server.Server.new_monkeys:
+    game_world.add_child(new_monkey, (8,10))
+  server.Server.new_monkeys = []
+
+  for dead_monkey in server.Server.removed_monkeys:
+    monkeys = game_world.children_of_type(monkey.Monkey)
+    for m in monkeys:
+      if m.player_id == dead_monkey.player_id:
+        m.kill_me()
+        break
+  server.Server.removed_monkeys = []
+
 
   events = []
   for event in pygame.event.get():

@@ -148,12 +148,29 @@ class Monkey(gameobject.GameObject):
 
   def to_network(self, msg):
     msg.append(monkey_id)
+    msg.append(self.player_id)
     msg.append(self.body.position.x)
     msg.append(self.body.position.y)
     msg.append(self.body.angle)
 
+    if self.parabola:
+      msg.append(1)
+      self.parabola.to_network(msg)
+    else:
+      msg.append(0)
+
+    if self.grab_joint:
+      msg.append(1)
+      grab_point = self.grab_joint.body2.position
+      msg.append(grab_point.x)
+      msg.append(grab_point.y)
+    else:
+      msg.append(0)
+
   def from_network(self, msg):
     id    = msg.pop()
+
+    self.player_id = int(msg.pop())
 
     x     = float(msg.pop())
     y     = float(msg.pop())
@@ -168,6 +185,21 @@ class Monkey(gameobject.GameObject):
     # all the attributes required for rendering, and I'm in a rush
     self.body = dummy
 
+    has_parabola = int(msg.pop())
+    if has_parabola == 1:
+      self.parabola = object.__new__(pathfinder.Parabola)
+      self.parabola.from_network(msg)
+    else:
+      self.parabola = None
+
+    has_grab = int(msg.pop())
+    if has_grab == 1:
+      gx = float(msg.pop())
+      gy = float(msg.pop())
+
+      self.grab_joint = FakeDistanceJoint(b2Vec2(gx, gy))
+    else:
+      self.grab_joint = None
 
   def update(self, delta_t):
     keys, events = self.controller.active, self.controller.events
@@ -289,6 +321,7 @@ class Monkey(gameobject.GameObject):
     source_body = self.body
     v0_max = 5
 
+    parabola = None
     for target in targets:
       if target is self:
         continue
@@ -550,9 +583,9 @@ class Monkey(gameobject.GameObject):
       grab_hand_pos = self.grab_joint.body2.position
     else:
       grab_hand_pos = b2Vec2(0.2, -0.2) + shoulder_offset
-      grab_hand_pos = self.body.GetWorldPoint(grab_hand_pos)
+      grab_hand_pos = self.GetWorldPoint(grab_hand_pos)
     
-    grab_shoulder_pos = self.body.GetWorldPoint(shoulder_offset)
+    grab_shoulder_pos = self.GetWorldPoint(shoulder_offset)
     grab_arm = grab_hand_pos - grab_shoulder_pos
     points = self._render_fatten_vector(grab_arm, 0.05)
     points = map(lambda x: x + grab_shoulder_pos, points)
@@ -563,9 +596,9 @@ class Monkey(gameobject.GameObject):
     shoulder_offset.x = -shoulder_offset.x
 
     item_hand_pos = b2Vec2(-0.2, -0.2) + shoulder_offset
-    item_hand_pos = self.body.GetWorldPoint(item_hand_pos)
+    item_hand_pos = self.GetWorldPoint(item_hand_pos)
 
-    item_shoulder_pos = self.body.GetWorldPoint(shoulder_offset)
+    item_shoulder_pos = self.GetWorldPoint(shoulder_offset)
     item_arm = item_hand_pos - item_shoulder_pos
     points = self._render_fatten_vector(item_arm, 0.05)
     points = map(lambda x: x + item_shoulder_pos, points)
@@ -671,4 +704,12 @@ class Monkey(gameobject.GameObject):
     score *= platform_dot
 
     return score < self.stats.max_landing_speed
+
+class FakeDistanceJoint(object):
+  class FakeBody(object):
+    def __init__(self, position):
+      self.position = position
+
+  def __init__(self, position):
+    self.body2 = FakeDistanceJoint.FakeBody(position)
 

@@ -42,6 +42,7 @@ class World(gameobject.GameObject):
 
     if map_name != self.map_name:
       self.size = (width, height)
+      self.map_name = map_name
       self.load_sprite(map_name + '.svg')
       self.map_name = map_name
 

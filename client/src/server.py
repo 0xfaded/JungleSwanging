@@ -4,12 +4,14 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
 
 import keymap
+import monkey
 
 class Client(object):
   def __init__(self, address):
     self.last_sequence = 0
     self.time_to_live = Server.timeout
     self.keys = keymap.KeyMap()
+    self.monkey = monkey.Monkey(self.keys)
 
     self.address = address
 
@@ -21,14 +23,18 @@ class Server(DatagramProtocol):
 
     self.active = {}
     self.reactor = reactor
+    self.new_monkeys = []
+    self.removed_monkeys = []
     
   def datagramReceived(self, data, address):
     if not self.active.has_key(address):
-      self.active[address] = Client(address)
+      new_client = Client(address)
+      self.new_monkeys.append(new_client.monkey)
+      self.active[address] = new_client 
 
     msg = data.strip().split(',')
     msg.reverse()
-    sequence_number = msg.pop()
+    sequence_number = int(msg.pop())
 
     client = self.active[address]
 
@@ -48,10 +54,13 @@ class Server(DatagramProtocol):
       client.time_to_live -= 1
 
       if client.time_to_live == 0:
+        self.removed_monkeys.append(client.monkey)
         del self.active[address]
         continue
 
-      self.transport.write(msg, address)
+      client_id = client.monkey.player_id
+      client_tag = str(client_id)+','
+      self.transport.write(client_tag + msg, address)
 
   def shutdown(self):
     self.reactor.fireSystemEvent('shutdown')

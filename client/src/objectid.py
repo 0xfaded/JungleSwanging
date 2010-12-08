@@ -2,11 +2,16 @@
 
 null_id       = 0
                  
+# Core Objects
 monkey_id     = 1
 grab_id       = 2
 platform_id   = 3
                  
-powerup_id    = 4
-projectile_id = 5
-
 world_id      = 6
+
+# Projectiles
+beachball_id  = 11
+
+# Effects
+abomb_id      = 21
+

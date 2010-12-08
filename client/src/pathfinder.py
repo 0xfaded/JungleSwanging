@@ -83,6 +83,25 @@ class Parabola(object):
 
     return True
 
+  def to_network(self, msg):
+    msg.append(self.p0.x)
+    msg.append(self.p0.y)
+    msg.append(self.d0.x)
+    msg.append(self.d0.y)
+    msg.append(self.t_hit)
+    msg.append(self.gravity)
+
+  def from_network(self, msg):
+    px = float(msg.pop())
+    py = float(msg.pop())
+    dx = float(msg.pop())
+    dy = float(msg.pop())
+    
+    self.p0 = b2Vec2(px, py)
+    self.d0 = b2Vec2(dx, dy)
+    self.t_hit = float(msg.pop())
+    self.gravity = float(msg.pop())
+
 
 def find_parabola(world, target_body, source_body,
                   target, source, v0_max, clearance, step=0.05):

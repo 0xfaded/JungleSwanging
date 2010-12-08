@@ -58,15 +58,15 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 # Import monkey stuff after initializing opengl
 import objectfactory
 import objectid
+import monkey
 
 import keymap
 
 # End monkey imports
 
-monkey     = objectfactory.ObjectFactory.from_id(objectid.monkey_id)
-monkey.from_network(['0', '0', '0', '0'])
-
 game_world = objectfactory.ObjectFactory.from_id(objectid.world_id)
+our_monkey = None
+
 active = True
 
 host = 'localhost'
@@ -84,12 +84,21 @@ class ClientProtocol(DatagramProtocol):
 
   def datagramReceived(self, data, address):
     global game_world
+    global our_monkey
 
     msg = data.strip().split(',')
     msg.reverse()
 
+    client_id = int(msg.pop()) 
+
     game_world.children = []
     game_world.tree_from_network(msg)
+
+    monkeys = game_world.children_of_type(monkey.Monkey)
+    for m in monkeys:
+      if m.player_id == client_id:
+        our_monkey = m
+        break
 
 client = ClientProtocol()
 
@@ -120,7 +129,7 @@ try:
 
     reactor.iterate(0)
 
-    if game_world == None:
+    if our_monkey == None:
       continue
 
     events = []
@@ -132,6 +141,10 @@ try:
       elif event.type == pygame.KEYDOWN:
         if event.unicode == 'q':
           active = False
+
+    # center camera on monkey
+    mx, my = our_monkey.body.position
+    glTranslate(-mx, -my, 0)
 
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 

@@ -7,6 +7,9 @@ import powerup
 import world
 import monkey
 import platform
+
+import beachballofdeath
+import abomb
 import gameobject
 
 class ObjectFactory(object):
@@ -21,10 +24,14 @@ class ObjectFactory(object):
       ret = object.__new__(grab.Grab)
     elif obj_id == world_id:
       ret = object.__new__(world.World)
-    elif obj_id == powerup_id:
-      ret = object.__new__(powerup.PowerUp)
-    elif obj_id == projectile_id:
-      ret = object.__new__(powerup.Projectile)
+
+    # Projectiles
+    elif obj_id == beachball_id:
+      ret = object.__new__(beachballofdeath.BeachBallOfDeath)
+
+    # Effects
+    elif obj_id == abomb_id:
+      ret = object.__new__(abomb.ABomb)
     else:
       raise Exception('Undefiened objectid {0}'.format(obj_id))
 

@@ -1,5 +1,7 @@
 # vim:set ts=2 sw=2 et:
 
+from Box2D import b2XForm, b2Mul
+
 class GameObject(object):
   def __init__(self):
     super(GameObject, self).__init__()
@@ -30,6 +32,7 @@ class GameObject(object):
     for i in xrange(len(self.children)):
       if id(self.children[i]) == id(child):
         self.children.pop(i)
+        break
 
   def set_root(self, world, contact_listener):
     self.parent = None
@@ -142,6 +145,17 @@ class GameObject(object):
 
   def render(self):
     pass
+  
+  def GetWorldPoint(self, point):
+    """
+    A slower version of b2Body.GetWorldPoint(), however this doesnt require
+    the body to be a real body. Useful for rendering
+    """
+    xform = b2XForm()
+    xform.R.Set(self.body.angle)
+    xform.position = self.body.position
+    p = b2Mul(xform, point)
+    return p
 
 # Avoid circular imports. Game object must be defined before
 # importing object factory
