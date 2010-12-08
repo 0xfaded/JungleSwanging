@@ -4,9 +4,10 @@ from OpenGL.GL import *
 from Box2D import *
 
 import effect
-import gamesprites
 
 from objectid import *
+
+import gamesprites
 
 class ABomb(effect.Effect):
 

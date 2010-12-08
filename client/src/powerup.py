@@ -8,22 +8,28 @@ from Box2D import *
 import gameobject
 import monkey
 
+import beachballofdeath
+import gamesprites
+
 from objectid import *
 
 class PowerUp(gameobject.GameObject):
 
-  def __init__(self, radius):
+  def __init__(self, radius, cooldown, sprite_name):
     super(PowerUp, self).__init__()
 
     self.circleDef = b2CircleDef()
     self.circleDef.radius = radius
-    self.circleDef.density = 1
-    self.circleDef.friction = 1
-    self.circleDef.restitution = 0.3
+    self.circleDef.isSensor = True
 
     self.bodyDef = b2BodyDef()
     self.bodyDef.userData = self
     self.bodyDef.fixedRotation = True
+
+    self.cooldown = cooldown
+    self.sprite_name = sprite_name
+    self.radius = radius
+    self.t = 0
 
   def add_to_world(self, at):
     self.bodyDef.position = at
@@ -33,13 +39,13 @@ class PowerUp(gameobject.GameObject):
 
     self.body.SetMassFromShapes()
 
-    self.add_callback(self.foo, 'Add', self.body, monkey.Monkey)
+    self.add_callback(self.on_touch, 'Live', self.body, monkey.Monkey)
 
 
     self.destroyMe = False
 
   def to_network(self, msg):
-    msg.append(powerup_id)
+    msg.append(1)
     msg.append(self.body.position.x)
     msg.append(self.body.position.y)
     msg.append(self.body.angle)
@@ -62,10 +68,26 @@ class PowerUp(gameobject.GameObject):
 
 
   def update(self, delta_t):
-    if self.destroyMe:
-      self.kill_me()
+    if self.t >= 0:
+      self.t -= delta_t
 
-  def foo(self, contact):
-    contact.shape2.GetBody().userData.stats.max_ground_velocity = 10
+  def on_touch(self, contact):
+    if self.t <= 0:
+      self.update_monkey(contact)
+      self.t = self.cooldown
 
-    contact.shape1.GetBody().userData.destroyMe = True
+  def update_monkey(self, contact):
+    monk = contact.shape2.GetBody().userData
+    monk.set_weapon(beachballofdeath.BeachBallOfDeath())
+
+  def render(self):
+    if self.t >= 0:
+      return
+
+    rot = self.body.angle
+    off = self.body.position
+    
+    w = self.radius * 2
+    h = self.radius * 2
+    gamesprites.GameSprites.render_at_center(self.sprite_name,off, (w,h), rot)
+

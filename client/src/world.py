@@ -168,8 +168,12 @@ def _make_grab(node, transform):
   node_type = node.tagName
   if node_type == 'path':
     p, r = _make_grab_from_path(node)
+  elif node_type == 'circle':
+    p, r = _make_grab_from_circle(node)
+  elif node_type == 'ellipse':
+    p, r = _make_grab_from_ellipse(node)
   else:
-    raise Exception('Unimplemented shape grab: {0}'.format(node_type))
+    raise Exception('Unimplemented grab shape: {0}'.format(node_type))
 
   # remove the transform on r, keep the scale
   p, r, origin = _apply_transform([p, r, b2Vec2(0, 0)], transform)
@@ -189,6 +193,20 @@ def _make_grab_from_path(node):
   position = m + a.target * 0.5
 
   return position, b2Vec2(radius, 0)
+
+def _make_grab_from_circle(node):
+  radius = float(node.attributes['r'])
+  x      = float(node.attributes['cx'])
+  y      = float(node.attributes['cy'])
+
+  return b2Vec2(x,y), b2Vec2(radius, 0)
+
+def _make_grab_from_ellipse(node):
+  radius = float(node.attributes['rx'])
+  x      = float(node.attributes['cx'])
+  y      = float(node.attributes['cy'])
+
+  return b2Vec2(x,y), b2Vec2(radius, 0)
 
 def _make_shape(node, transform):
   if node.attributes.has_key('transform'):

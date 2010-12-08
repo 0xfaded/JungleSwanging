@@ -27,7 +27,12 @@ _player_id = 1
 
 class Monkey(gameobject.GameObject):
 
-  shoulder_offset = (0.15, -0.2)
+  grab_shoulder_offset = (0.15, -0.2)
+  grab_hand_offset     = (0.2, -0.2)
+  item_shoulder_offset = (-0.15, -0.2)
+  item_hand_offset     = (-0.2, -0.2)
+
+  right_after_ms_still = 500
 
   class Stats(object):
     """
@@ -63,7 +68,7 @@ class Monkey(gameobject.GameObject):
       self.hang_impulse_y       =  0 # Best thought as hang boost
 
       self.max_landing_speed    = 20
-      self.max_knock_impulse    = 20
+      self.max_knock_impulse    = 5
 
       # if velocity < max_velocity: apply force
       self.max_ground_velocity  =  10
@@ -97,7 +102,6 @@ class Monkey(gameobject.GameObject):
     self.shoulderDef = b2CircleDef()
     self.shoulderDef.radius = 0
     self.shoulderDef.isSensor = True
-    self.shoulderDef.filter.groupIndex = -self.player_id
 
     self.bodyDef = b2BodyDef()
     self.bodyDef.angle = 0.0
@@ -110,12 +114,17 @@ class Monkey(gameobject.GameObject):
 
     # Targeting
     self.parabola = None
+    self.weapon = None
+    # For rendering purposes only
+    self.tracking_weapon = None
 
     # Body.GetFixedRotation() is buggy, so we need to store our own
     self.fixedRotation = True
     self.controlled = True
+    self.right_me = False
 
     self.direction = 1
+    self.still_timer = 0
 
     self.state = 'none'
 
@@ -133,7 +142,7 @@ class Monkey(gameobject.GameObject):
     self.head_shape = self.body.CreateShape(self.headDef)
     self.head_shape = self.head_shape.asCircle()
 
-    self.shoulderDef.localPosition = (self.shoulder_offset)
+    self.shoulderDef.localPosition = (self.grab_shoulder_offset)
 
     self.shoulder_shape = self.body.CreateShape(self.shoulderDef)
     self.shoulder_shape = self.shoulder_shape.asCircle()
@@ -245,8 +254,20 @@ class Monkey(gameobject.GameObject):
           impulse_basis += b2Vec2( 0, -1)
 
     # Prevent ourselves from getting stuck with our feet not touching a platform
-    if self.body.linearVelocity.Length() < 0.01:
-      self.controlled = True
+    if self.body.linearVelocity.Length() < 0.01 and not self.controlled:
+      self.still_timer += delta_t
+      if self.still_timer > self.right_after_ms_still:
+        self.controlled = True
+        self.still_timer = 0
+    else:
+      self.still_timer = 0
+
+    # Used whilst airbourne only to deal with small bumps
+    # See on_hit
+    if self.right_me:
+      self.body.angle = 0
+      self.body.angularVelocity = 0
+    self.right_me = False
 
     # Check if the monkey has returned to the ground
     #   If velocity is reasonable, return to standing state
@@ -313,13 +334,35 @@ class Monkey(gameobject.GameObject):
       force = b2Mul(b2Mat22(self.body.angle), force)
       self.body.ApplyImpulse(impulse, self.body.position)
 
+  def apply_impulse(self, impulse, offset):
+    max_impulse = self.stats.max_knock_impulse
+
+    print impulse.Length()
+
+    if impulse.LengthSquared() > max_impulse * max_impulse:
+      self.controlled = False
+
+    if self.controlled:
+      self.right_me = True
+
+    self.body.ApplyImpulse(impulse, offset)
+
+  def set_weapon(self, weapon):
+    self.weapon = weapon
+    self.tracking_weapon = None
+
   def _find_target(self):
+    if self.weapon == None:
+      self.parabola = None
+      return
+
     targets = self.get_root().children_of_type(Monkey)
     targets.sort(key=lambda m: -m.body.position.y)
 
     source_pos  = self.body.position
     source_body = self.body
-    v0_max = 5
+
+    v0_max = self.weapon.max_velocity_from_max_impulse(10)
 
     parabola = None
     for target in targets:
@@ -420,18 +463,25 @@ class Monkey(gameobject.GameObject):
 
   def on_hit(self, result):
     # Platform and foot collides are handled separetly
-    if result.shape1.this == self.foot_shape.this and \
-        isinstance(result.shape2.GetBody().userData, platform.Platform):
+    if result.shape1.this == self.foot_shape.this:
+      if isinstance(result.shape2.GetBody().userData, platform.Platform):
+        # If its a platform, then try land on it
+        if self.on_platform_land(result):
+          # In the event that we landed on a platform, we are done
+          return
       
-      if self.on_platform_land(result):
-        # In the event that we landed on a platform, we are done
-        return
-
     max_impulse = self.stats.max_knock_impulse
     impulse = math.hypot(result.normalImpulse, result.tangentImpulse)
 
     if impulse > max_impulse:
       self.controlled = False
+
+    # Contact with other monkeys always results in an uncontrolled state
+    if isinstance(result.shape2.GetBody().userData, Monkey):
+      self.controlled = False
+
+    if self.controlled:
+      self.right_me = True
 
   def on_platform_land(self, result):
     # For movement calculations, if we are in a grounded state we
@@ -450,10 +500,11 @@ class Monkey(gameobject.GameObject):
     return False
 
   def _attempt_fire(self):
-    if self.parabola:
-      beachball = beachballofdeath.BeachBallOfDeath()
-      beachball.set_init_velocity(self.parabola)
-      self.add_child(beachball, (0,0))
+    if self.parabola and self.weapon:
+      self.weapon.set_init_velocity(self.parabola)
+      self.add_child(self.weapon, (0,0))
+      self.tracking_weapon = self.weapon
+      self.weapon = None
 
   def _attempt_grab(self):
     world = self.body.GetWorld()
@@ -573,7 +624,6 @@ class Monkey(gameobject.GameObject):
     # Calculate rendering coords
     rot = self.body.angle
     off = self.body.position
-    shoulder_offset = b2Vec2(self.shoulder_offset)
 
     # Body
     gamesprites.GameSprites.render_at_center('monkey', off, (1.6, 1.6), rot)
@@ -582,10 +632,10 @@ class Monkey(gameobject.GameObject):
     if self.grab_joint:
       grab_hand_pos = self.grab_joint.body2.position
     else:
-      grab_hand_pos = b2Vec2(0.2, -0.2) + shoulder_offset
+      grab_hand_pos = b2Vec2(self.grab_hand_offset) + self.grab_shoulder_offset
       grab_hand_pos = self.GetWorldPoint(grab_hand_pos)
     
-    grab_shoulder_pos = self.GetWorldPoint(shoulder_offset)
+    grab_shoulder_pos = self.GetWorldPoint(self.grab_shoulder_offset)
     grab_arm = grab_hand_pos - grab_shoulder_pos
     points = self._render_fatten_vector(grab_arm, 0.05)
     points = map(lambda x: x + grab_shoulder_pos, points)
@@ -593,17 +643,21 @@ class Monkey(gameobject.GameObject):
     gamesprites.GameSprites.render_points('monkey_arm', points)
 
     # Item Arm
-    shoulder_offset.x = -shoulder_offset.x
+    if self.tracking_weapon:
+      item_hand_pos = self.tracking_weapon.body.position
+    else:
+      item_hand_pos = b2Vec2(self.item_hand_offset) + self.item_shoulder_offset
+      item_hand_pos = self.GetWorldPoint(item_hand_pos)
 
-    item_hand_pos = b2Vec2(-0.2, -0.2) + shoulder_offset
-    item_hand_pos = self.GetWorldPoint(item_hand_pos)
-
-    item_shoulder_pos = self.GetWorldPoint(shoulder_offset)
+    item_shoulder_pos = self.GetWorldPoint(self.item_shoulder_offset)
     item_arm = item_hand_pos - item_shoulder_pos
     points = self._render_fatten_vector(item_arm, 0.05)
     points = map(lambda x: x + item_shoulder_pos, points)
 
     gamesprites.GameSprites.render_points('monkey_arm', points)
+
+    if self.weapon:
+      self.weapon.render(item_hand_pos, rot)
 
   def _render_fatten_vector(self, vector, fatness):
     unit = vector.copy()
@@ -630,6 +684,7 @@ class Monkey(gameobject.GameObject):
       shape.friction    = stats.friction
       shape.restitution = stats.restitution
 
+    self.head_shape.friction = 0.2
     #self.body.SetMassFromShapes()
 
   def _set_controlled(self, controlled):
@@ -665,9 +720,6 @@ class Monkey(gameobject.GameObject):
   def _is_grounded(self):
     return self.platform_contact != None
 
-  def _is_controlled(self):
-    return self.fixedRotation
-
   def _is_hanging(self):
     return self.grab_joint != None
 
@@ -693,6 +745,8 @@ class Monkey(gameobject.GameObject):
 
     platform_dot = b2Dot(platform_contact.normal, b2Vec2(0,1)) 
 
+#    print self, platform_contact.shape2.GetBody().userData, platform_dot
+#   print platform_contact
     # Reject any platform at an angle greater than 60 degrees
     if platform_dot < 0.5:
       return False

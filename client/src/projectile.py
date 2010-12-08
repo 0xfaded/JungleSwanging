@@ -8,13 +8,15 @@ from Box2D import *
 import gameobject
 import random
 
+import gamesprites
 from objectid import *
 
 class Projectile(gameobject.GameObject):
-  def __init__(self, radius, mass, friction=1, restitution=0.3):
+  def __init__(self, radius, mass, sprite_name, friction=1, restitution=0.3):
     super(Projectile, self).__init__();
     self.mass   = float(mass)
     self.radius = radius
+    self.sprite_name = sprite_name
 
     self.circleDef = b2CircleDef()
     self.circleDef.radius = radius
@@ -30,7 +32,7 @@ class Projectile(gameobject.GameObject):
     self.init_v = parabola.d(0)
 
   def max_velocity_from_max_impulse(self, max_impulse):
-    return self.mass / max_impulse
+    return max_impulse / self.mass
 
   def add_to_world(self, at):
     self.bodyDef.position = at
@@ -59,6 +61,8 @@ class Projectile(gameobject.GameObject):
       for shape in self.body.GetShapeList():
         shape.filter.groupIndex = 0
 
+      self.parent.tracking_weapon = None
+
       self.remove_callback(self.parent_watch_id)
       self.parent_watch_id = None
 
@@ -77,4 +81,17 @@ class Projectile(gameobject.GameObject):
     self.body = b2BodyDef()
     self.body.position = (x,y)
     self.body.angle = angle
+
+  def render(self, off=None, rot=None):
+    """
+    Optionally, render at global 'at'. Useful for rendering whilst not
+    strictly part of the world tree
+    """
+    if not off:
+      rot = self.body.angle
+      off = self.body.position
+    
+    w = self.radius * 2
+    h = self.radius * 2
+    gamesprites.GameSprites.render_at_center(self.sprite_name,off, (w,h), rot)
 

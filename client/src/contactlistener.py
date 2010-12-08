@@ -107,6 +107,10 @@ class ContactListener(b2ContactListener):
           callback.func(contact)
 
   def _flip_contact(self, contact):
+    # XXX Turns out this function was broken. If we do anything here,
+    # well mess up the entire simulation. Epic TODO. The shape swap
+    # is still required though
+
     # Careful, this is a shallow copy
     flipped = copy.copy(contact)
 
@@ -114,11 +118,14 @@ class ContactListener(b2ContactListener):
     flipped.shape1 = flipped.shape2
     flipped.shape2 = tmp
 
-    for name, attribute in contact.__dict__.items():
-      if isinstance(attribute, Number) or isinstance(attribute, b2Vec2):
-        # Vectors and numbers are located on the b2Contact struct, therefore
-        # it is save to modify them in place
-        flipped.__dict__[name] *= -1
+    return flipped
+
+    if isinstance(contact, b2ContactPoint):
+      flipped.normal     = -flipped.normal
+      flipped.separation = -flipped.separation
+      flipped.velocity   = -flipped.velocity
+    elif isinstance(contact, b2ContactResult):
+      flipped.normal            = -flipped.normal
 
     return flipped
 
