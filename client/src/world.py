@@ -158,6 +158,12 @@ def _handle_group(node, transform):
       p, r = _make_grab(child, transform)
       ret.append((grab.Grab(r.Length()), p))
 
+    elif klass == 'swawnpoint':
+      x = float(child.attributes['x'].value)
+      y = float(child.attributes['y'].value)
+      w = float(child.attributes['width'].value)
+      h = float(child.attributes['height'].value)
+
     elif klass == 'powerup':
       p, r = _make_grab(child, transform)
       powerup_id = int(child.attributes['obj_id'].value)
