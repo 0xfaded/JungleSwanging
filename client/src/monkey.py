@@ -130,6 +130,30 @@ class Monkey(gameobject.GameObject):
 
     self.is_us = False
 
+  def reset(self):
+    super(Monkey, self).__init__()
+
+    self.t = 0
+
+    self.base_stats = Monkey.Stats()
+    self.stats      = self.base_stats
+
+    # Targeting
+    self.parabola = None
+    self.weapon = None
+    # For rendering purposes only
+    self.tracking_weapon = None
+
+    # Body.GetFixedRotation() is buggy, so we need to store our own
+    self.fixedRotation = True
+    self.controlled = True
+    self.right_me = False
+
+    self.direction = 1
+    self.still_timer = 0
+
+    self.state = 'none'
+
   def set_us(self, is_us):
     self.is_us = is_us
 

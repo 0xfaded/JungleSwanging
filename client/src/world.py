@@ -181,6 +181,10 @@ def _handle_group(node, transform):
 
       ret.append((spawnpoint.SpawnPoint(s), p))
 
+    elif klass == 'banana':
+      p, r = _make_grab(child, transform)
+      ret.append((banana.Banana(r.Length()), p))
+
     elif klass == 'powerup':
       p, r = _make_grab(child, transform)
       powerup_id = int(child.attributes['obj_id'].value)

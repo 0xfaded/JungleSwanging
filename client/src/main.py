@@ -74,6 +74,7 @@ import server
 import keymap
 
 import spawnpoint
+import banana
 
 # Set up Box2d World
 
@@ -132,6 +133,9 @@ monkey2   = monkey.Monkey(keymap.KeyMap())
 
 server.Server.new_monkeys.append(monkey1)
 
+banana1 = banana.Banana(1)
+
+game_world.add_child(banana1, (5, 2))
 #game_world.add_child(monkey2, (6,8))
 #game_world.add_child(p, (2,10))
 
@@ -142,6 +146,30 @@ while active:
   delta_t = clock.tick(fps)
   server.Server.iterate()
 
+  # Remove dead monkeys
+  for dead_monkey in server.Server.removed_monkeys:
+    monkeys = game_world.children_of_type(monkey.Monkey)
+    for m in monkeys:
+      if m.player_id == dead_monkey.player_id:
+        m.kill_me()
+        break
+  server.Server.removed_monkeys = []
+
+  # Check for win
+  bananas = game_world.get_root().children_of_type(banana.Banana)
+  win = False
+  for b in bananas:
+    if b.get_winner():
+      win = True
+      break
+
+  if win:
+    break
+    #monkeys = game_world.get_root().children_of_type(monkey.Monkey)
+  #else:
+    #soft_respawn = []
+
+  # Spawn more monkies
   spawnpoints = game_world.get_root().children_of_type(spawnpoint.SpawnPoint)
   random.shuffle(spawnpoints)
 
@@ -152,14 +180,6 @@ while active:
         break
 
   server.Server.new_monkeys = []
-
-  for dead_monkey in server.Server.removed_monkeys:
-    monkeys = game_world.children_of_type(monkey.Monkey)
-    for m in monkeys:
-      if m.player_id == dead_monkey.player_id:
-        m.kill_me()
-        break
-  server.Server.removed_monkeys = []
 
 
   events = []
