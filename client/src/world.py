@@ -118,6 +118,7 @@ class World(gameobject.GameObject):
 
 
 #################################################################
+import objectfactory
 
 def _D(s):
   return filter(unicode.isdigit, s) 
@@ -155,8 +156,18 @@ def _handle_group(node, transform):
 
     elif klass == 'grab':
       p, r = _make_grab(child, transform)
-
       ret.append((grab.Grab(r.Length()), p))
+
+    elif klass == 'powerup':
+      p, r = _make_grab(child, transform)
+      powerup_id = int(child.attributes['obj_id'].value)
+      cooldown   = int(child.attributes['cooldown'].value)
+    
+      dummy = objectfactory.ObjectFactory.from_id(powerup_id)
+      r = dummy.radius
+      sprite_name = dummy.sprite_name
+      weapon = objectfactory.ObjectFactory.get_constructor(powerup_id)
+      ret.append((powerup.PowerUp(r, cooldown, sprite_name, weapon), p))
 
   return ret
 
