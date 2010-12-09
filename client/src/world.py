@@ -160,6 +160,10 @@ def _handle_group(node, transform):
       ret.append((grab.Grab(r.Length()), p))
 
     elif klass == 'spawnpoint':
+      if child.attributes.has_key('transform'):
+        tmat = _parse_transform(child.attributes['transform'].value)
+        spawn_transform = _mat33mul(transform, tmat)
+
       x = float(child.attributes['x'].value)
       y = float(child.attributes['y'].value)
       w = float(child.attributes['width'].value)
@@ -167,8 +171,14 @@ def _handle_group(node, transform):
 
       p = b2Vec2(x, y)
       s = b2Vec2(w, h)
-      
-      [p, s] = _apply_transform([p, r], transform)
+
+      [p, s, o] = _apply_transform([p, s, b2Vec2(0,0)], spawn_transform)
+
+      s -= o
+
+      s.y = -s.y
+      p.y -= s.y
+
       ret.append((spawnpoint.SpawnPoint(s), p))
 
     elif klass == 'powerup':
