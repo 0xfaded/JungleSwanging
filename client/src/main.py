@@ -127,7 +127,7 @@ monkey1   = monkey.Monkey(controller)
 #monkey2   = monkey.Monkey(keymap.KeyMap())
 
 p = powerup.PowerUp(0.5, 3000, 'beachball')
-game_world.add_child(monkey1, (2,10))
+game_world.add_child(monkey1, (2,5))
 #game_world.add_child(monkey2, (6,8))
 #game_world.add_child(p, (2,10))
 
