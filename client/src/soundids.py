@@ -1,0 +1,15 @@
+jump_id    = 0x0001
+land_id    = 0x0002
+punch_id   = 0x0004
+swing_id   = 0x0008
+release_id = 0x0010
+ouch_id    = 0x0020
+pain_id    = 0x0040
+collect_id = 0x0080
+bounce_id  = 0x0100
+metal_id   = 0x0200
+boom_id    = 0x0400
+cheer_id   = 0x0800
+select_id  = 0x1000
+accept_id  = 0x2000
+cancel_id  = 0x4000
