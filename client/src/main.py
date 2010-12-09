@@ -124,8 +124,8 @@ game_world.set_root(b2_world, contact_listener)
 
 game_world.read(sys.argv[1])
 
-spawn1 = spawnpoint.SpawnPoint(b2Vec2(2,1.5))
-game_world.add_child(spawn1, (1,3))
+#spawn1 = spawnpoint.SpawnPoint(b2Vec2(2,1.5))
+#game_world.add_child(spawn1, (1,3))
 
 controller = keymap.KeyMap()
 
