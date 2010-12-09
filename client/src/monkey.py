@@ -219,10 +219,10 @@ class Monkey(gameobject.GameObject):
       msg.append(tracking_point.x)
       msg.append(tracking_point.y)
 
-    if target_pos:
+    if self.target_pos:
       msg.append(1)
-      msg.append(target_pos.x)
-      msg.append(target_pos.a)
+      msg.append(self.target_pos.x)
+      msg.append(self.target_pos.y)
     else:
       msg.append(0)
 
@@ -279,7 +279,7 @@ class Monkey(gameobject.GameObject):
       self.tracking_weapon = b2Vec2(tx, ty)
 
     has_target_pos = int(msg.pop())
-    if has_target_posmsg.pop()
+    if has_target_pos:
       tx = float(msg.pop())
       ty = float(msg.pop())
       self.target_pos = b2Vec2(tx, ty)
@@ -445,6 +445,7 @@ class Monkey(gameobject.GameObject):
         continue
 
       target_body = target.body
+      target_pos = target_body.position
 
       clearance = self.weapon.radius + 0.05
       parabola = pathfinder.find_parabola(self.world, target_body, source_body,
