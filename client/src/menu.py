@@ -1,9 +1,12 @@
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+
+from twisted.internet.protocol import DatagramProtocol
+from twisted.internet import reactor
+
 import pygame
 from pygame.locals import *
-
 
 
 import sys
@@ -40,8 +43,25 @@ class Main_Menu(object):
     def __init__(self):
         self.init_gl()
 
+        self.host = 'localhost'
+        self.host_port = 8007
+        self.client_port = 9999
+
+        if len(sys.argv) >= 2:
+          self.host = sys.argv[1]
+        if len(sys.argv) >= 3:
+          self.host_port = int(sys.argv[2])
+        if len(sys.argv) >= 4:
+          self.client_port = int(sys.argv[3])
+
+
     def draw(self, i):
         #MUST MAKE ALL SHAPES COUNTER-CLOCKWISE
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+
         
         glEnable(GL_TEXTURE_2D)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
@@ -187,11 +207,9 @@ class Main_Menu(object):
                     elif event.type == pygame.KEYDOWN:
                         if event.key == K_RETURN or event.unicode == 'a':
                             if menu_item == 2:
-                                """
-                                
-                                INSERT START GAME HERE
-                                
-                                """
+                                client = Client(self.host, self.host_port,
+                                                self.client_port)
+                                client.run()
                             elif menu_item == 1:
                                 menu_page = 2
                                 self.mm = False
@@ -231,6 +249,114 @@ class Main_Menu(object):
             self.draw(menu_page)
         
             pygame.display.flip()
+
+    pygame.quit()
+
+
+class ClientProtocol(DatagramProtocol):
+
+  def __init__(self, game_world):
+    self.game_world = game_world
+    self.our_monkey = None 
+
+  def datagramReceived(self, data, address):
+
+    import monkey
+
+    msg = data.strip().split(',')
+    msg.reverse()
+
+    client_id = int(msg.pop()) 
+
+    self.game_world.children = []
+    self.game_world.tree_from_network(msg)
+
+    monkeys = self.game_world.children_of_type(monkey.Monkey)
+    for m in monkeys:
+      if m.player_id == client_id:
+        self.our_monkey = m
+        break
+      
+class Client(object):
+  def __init__(self, host, host_port, client_port):
+
+    self.host = host
+    self.host_port = host_port
+    self.client_port = client_port
+  
+  def run(self):
+
+    import objectfactory
+    import objectid
+
+    import keymap
+
+    game_world = objectfactory.ObjectFactory.from_id(objectid.world_id)
+
+    client_proto = ClientProtocol(game_world)
+
+    reactor.listenUDP(self.client_port, client_proto)
+    reactor.fireSystemEvent('startup')
+
+    fps = 30
+    clock = pygame.time.Clock()
+
+    sequence_number = 0
+
+    keys = keymap.KeyMap()
+    active = True
+
+    try:
+      while active:
+        delta_t = clock.tick(fps)
+
+        msg = [sequence_number]
+        sequence_number += 1
+
+        keys.read_keys(pygame.key.get_pressed())
+        keys.to_network(msg)
+
+        msg = map(str, msg)
+        msg = ','.join(msg)
+
+        client_proto.transport.write(msg, (self.host, self.host_port))
+
+        reactor.iterate(0)
+
+        if client_proto.our_monkey == None:
+          continue
+
+        events = []
+        for event in pygame.event.get():
+          events.append(event)
+
+          if event.type == pygame.QUIT:
+            active = False
+          elif event.type == pygame.KEYDOWN:
+            if event.unicode == 'q':
+              active = False
+
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+
+        zoom = 0.1
+        glScale(zoom, zoom, 1)
+
+        # center camera on monkey
+        mx, my = client_proto.our_monkey.body.position
+        glTranslate(-mx, -my, 0)
+
+        game_world.tree_render()
+
+        pygame.display.flip()
+
+    except Exception as e:
+      print e
+
+    reactor.fireSystemEvent('shutdown')
+
 
 
 if __name__ == '__main__':

@@ -11,9 +11,16 @@ world_id      = 6
 
 # Projectiles
 beachball_id  = 11
+pinapple_id   = 12
+orange_id     = 13
 
 # Effects
 abomb_id      = 21
+burst_id      = 22
 
 # Powerup
 powerup_id    = 31
+
+# Permanent Objects
+fan_id        = 41
+

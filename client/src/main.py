@@ -124,12 +124,18 @@ game_world.read(sys.argv[1])
 controller = keymap.KeyMap()
 
 monkey1   = monkey.Monkey(controller)
-#monkey2   = monkey.Monkey(keymap.KeyMap())
+monkey2   = monkey.Monkey(keymap.KeyMap())
 
-p = powerup.PowerUp(0.5, 3000, 'beachball')
+import pinapplegrenade
+import orange
+p1 = powerup.PowerUp(0.2, 3000, 'pinapple', pinapplegrenade.PinappleGrenade)
+p2 = powerup.PowerUp(0.4, 3000, 'orange', orange.Orange)
+
 game_world.add_child(monkey1, (2,10))
-#game_world.add_child(monkey2, (6,8))
-#game_world.add_child(p, (2,10))
+game_world.add_child(monkey2, (6,8))
+
+game_world.add_child(p1, (4,10))
+game_world.add_child(p2, (6,10))
 
 monkey1.set_weapon(beachballofdeath.BeachBallOfDeath())
 
