@@ -12,6 +12,12 @@ import grab
 import monkey
 import spawnpoint
 
+import soundids
+from soundids import *
+
+import pygame
+from pygame.locals import *
+
 import pngspritesheet
 
 from objectid import *
@@ -28,18 +34,57 @@ class World(gameobject.GameObject):
 
   def __init__(self):
     super(World, self).__init__()
+    self.sounds = 0
+
+  def play_sounds(self):
+    if self.sounds & jump_id:
+      pygame.mixer.Sound('jump.wav').play()
+ #   if self.sounds & land_id:
+  #    pygame.mixer.Sound('land.wav').play()
+    if self.sounds & punch_id:
+      pygame.mixer.Sound('punch.wav').play()
+    if self.sounds & swing_id:
+      pygame.mixer.Sound('grab.wav').play()
+    if self.sounds & release_id:
+      pygame.mixer.Sound('release.wav').play()
+   # if self.sounds & ouch_id:
+#      pygame.mixer.Sound('ouch.wav').play()
+#    if self.sounds & pain_id:
+ #     pygame.mixer.Sound('pain.wav').play()
+  #  if self.sounds & collect_id:
+   #   pygame.mixer.Sound('collect.wav').play()
+    if self.sounds & bounce_id:
+      pygame.mixer.Sound('bounce.wav').play()
+    if self.sounds & metal_id:
+      pygame.mixer.Sound('metal.wav').play()
+    if self.sounds & boom_id:
+      pygame.mixer.Sound('boom.wav').play()
+  #  if self.sounds & cheer_id:
+   #   pygame.mixer.Sound('cheer.wav').play()
+    if self.sounds & select_id:
+      pygame.mixer.Sound('select.wav').play()
+    if self.sounds & accept_id:
+      pygame.mixer.Sound('accept.wav').play()
+    if self.sounds & cancel_id:
+      pygame.mixer.Sound('cancel.wav').play()
+    self.sounds = 0
+
 
   def to_network(self, msg):
     msg.append(world_id)
     msg.append(self.map_name)
     msg.append(self.size[0])
     msg.append(self.size[1])
+    msg.append(self.sounds)
+
+    self.sounds = 0
 
   def from_network(self, msg):
     id       = msg.pop()
     map_name = msg.pop()
     width    = int(msg.pop())
     height   = int(msg.pop())
+    self.sounds = int(msg.pop())
 
     if map_name != self.map_name:
       self.size = (width, height)
@@ -108,7 +153,7 @@ class World(gameobject.GameObject):
     s = (b2NextPowerOfTwo(self.size[0]), b2NextPowerOfTwo(self.size[1]))
 
     self.sprite = pngspritesheet.PNGSpriteSheet(self.map_name + '.png')
-    self.sprite.add_sprite('world', path, (0, 0), self.sprite.size) 
+    self.sprite.add_sprite('world', path, (0, 0), self.sprite.size)
     self.sprite.set_texture()
 
   def render(self):
@@ -122,8 +167,8 @@ class World(gameobject.GameObject):
 import objectfactory
 
 def _D(s):
-  return filter(unicode.isdigit, s) 
-  
+  return filter(unicode.isdigit, s)
+
 def _handle_group(node, transform):
   if node.attributes.has_key('transform'):
     tmat = _parse_transform(node.attributes['transform'].value)
@@ -219,7 +264,7 @@ def _make_grab(node, transform):
   r = r - origin
 
   return p, r
-  
+
 def _make_grab_from_path(node):
   tokens = _tokenize_d(node.attributes['d'].nodeValue)
   if tokens[0][0] != 'm' or tokens[1][0] != 'a':

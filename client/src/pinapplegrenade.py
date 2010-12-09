@@ -12,6 +12,7 @@ import gamesprites
 import burst
 import smallexplosion
 import monkey
+import soundids
 
 class PinappleGrenade(projectile.Projectile):
 
@@ -40,6 +41,7 @@ class PinappleGrenade(projectile.Projectile):
       self.bounces = 1
 
     if self.bounces > 0:
+      self.get_root().sounds |= soundids.boom_id
       effect_pos = self.body.position + b2Vec2(0,0.2)
       self.get_root().add_child(burst.Burst(), effect_pos)
 
@@ -54,6 +56,8 @@ class PinappleGrenade(projectile.Projectile):
   def on_hit(self, contact):
     if isinstance(contact.shape2.GetBody().userData, monkey.Monkey):
       self.bounces = 1
+    else:
+      self.get_root().sounds |= soundids.metal_id
 
   def to_network(self, msg):
     msg.append(pinapple_id)

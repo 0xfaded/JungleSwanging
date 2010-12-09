@@ -10,6 +10,7 @@ from objectid import *
 import projectile
 import gamesprites
 import monkey
+import soundids
 
 class Orange(projectile.Projectile):
 
@@ -26,6 +27,7 @@ class Orange(projectile.Projectile):
     # Use a custom comparison function that ignores sensors
     # All projectiles will probably want to do this
     cmp = lambda x: not x.isSensor
+    self.add_callback(self.on_hit, 'Add', self.body, cmp)
 
   def max_velocity_from_max_impulse(self, max_impulse):
     return 5 * max_impulse / self.mass
@@ -37,6 +39,9 @@ class Orange(projectile.Projectile):
 
     if self.timeToRemove < 0:
       self.kill_me()
+
+  def on_hit(self, contact):
+    self.get_root().sounds |= soundids.bounce_id
 
   def to_network(self, msg):
     msg.append(orange_id)

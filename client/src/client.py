@@ -5,6 +5,7 @@ from twisted.internet import reactor
 import sys
 import time
 
+import soundids
 import pygame
 from pygame.locals import *
 
@@ -73,6 +74,9 @@ host = 'localhost'
 host_port = 8007
 client_port = 9999
 
+cancel_sound = pygame.mixer.Sound('cancel.wav')
+game_music = pygame.mixer.Sound('spin.ogg')
+
 if len(sys.argv) >= 2:
   host = sys.argv[1]
 if len(sys.argv) >= 3:
@@ -89,7 +93,7 @@ class ClientProtocol(DatagramProtocol):
     msg = data.strip().split(',')
     msg.reverse()
 
-    client_id = int(msg.pop()) 
+    client_id = int(msg.pop())
 
     game_world.children = []
     game_world.tree_from_network(msg)
@@ -113,6 +117,9 @@ sequence_number = 0
 keys = keymap.KeyMap()
 
 #try:
+
+game_music.play(-1)
+
 while active:
   delta_t = clock.tick(fps)
 
@@ -140,6 +147,8 @@ while active:
       active = False
     elif event.type == pygame.KEYDOWN:
       if event.unicode == 'q':
+        pygame.mixer.stop()
+        cancel_sound.play()
         active = False
 
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)

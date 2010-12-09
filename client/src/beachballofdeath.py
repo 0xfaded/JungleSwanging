@@ -12,6 +12,7 @@ import gamesprites
 import abomb
 import explosion
 import monkey
+import soundids
 
 class BeachBallOfDeath(projectile.Projectile):
   max_bounces = 5
@@ -39,9 +40,10 @@ class BeachBallOfDeath(projectile.Projectile):
     super(BeachBallOfDeath, self).update(delta_t)
 
     if self.bounces > 3:
+      self.get_root().sounds |= soundids.boom_id
       effect_pos = self.body.position + b2Vec2(0,0.2)
       self.get_root().add_child(abomb.ABomb(), effect_pos)
-      
+
       # Remove ball from simulation before explosion
       explode_at = self.body.position
       self.kill_me()
@@ -51,6 +53,7 @@ class BeachBallOfDeath(projectile.Projectile):
 
 
   def on_hit(self, contact):
+    self.get_root().sounds |= soundids.bounce_id
     if isinstance(contact.shape2.GetBody().userData, monkey.Monkey):
       if self.bounces == 0:
         self.body.linearVelocity *= 3

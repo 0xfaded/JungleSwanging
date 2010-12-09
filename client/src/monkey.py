@@ -12,7 +12,10 @@ import gameobject
 import grab
 import platform
 import beachballofdeath
+import orange
+import pinapplegrenade
 
+import soundids
 import gamesprites
 
 import pathfinder
@@ -128,6 +131,7 @@ class Monkey(gameobject.GameObject):
 
     self.state = 'none'
 
+
     self.is_us = False
 
   def reset(self):
@@ -213,6 +217,9 @@ class Monkey(gameobject.GameObject):
       tracking_point = self.tracking_weapon.body.position
       msg.append(tracking_point.x)
       msg.append(tracking_point.y)
+
+#    msg.append(self.sounds)
+#    self.sounds = 0
 
   def from_network(self, msg):
     self.is_us = False
@@ -306,6 +313,8 @@ class Monkey(gameobject.GameObject):
           impulse_basis += b2Vec2( 1,  0)
         if event.key == K_UP:
           impulse_basis += b2Vec2( 0,  1)
+          if self.controlled== True:
+            self.get_root().sounds |= soundids.jump_id
         if event.key == K_DOWN:
           impulse_basis += b2Vec2( 0, -1)
 
@@ -382,7 +391,7 @@ class Monkey(gameobject.GameObject):
     if force.Length() != 0:
       if not self.state == 'grounded' or \
           self.body.linearVelocity.Length() < self.stats.max_ground_velocity:
-      
+
         force = b2Mul(b2Mat22(self.body.angle), force)
         self.body.ApplyForce(force, self.body.position)
 
@@ -525,7 +534,7 @@ class Monkey(gameobject.GameObject):
         if self.on_platform_land(result):
           # In the event that we landed on a platform, we are done
           return
-      
+
     max_impulse = self.stats.max_knock_impulse
     impulse = math.hypot(result.normalImpulse, result.tangentImpulse)
 
@@ -550,13 +559,14 @@ class Monkey(gameobject.GameObject):
     if self._will_land(result):
       self.platform_contact = copy.copy(result)
       self.controlled = True
-
+      self.get_root().sounds |= soundids.land_id
       return True
 
     return False
 
   def _attempt_fire(self):
     if self.parabola and self.weapon:
+      self.get_root().sounds |= soundids.punch_id
       self.weapon.set_init_velocity(self.parabola)
       self.add_child(self.weapon, (0,0))
       self.tracking_weapon = self.weapon
@@ -568,10 +578,13 @@ class Monkey(gameobject.GameObject):
     if self.grab_joint != None:
       world.DestroyJoint(self.grab_joint)
       self.grab_joint = None
+      self.get_root().sounds |= soundids.release_id
       return
 
     if self.grab_contact == None:
       return
+
+    self.get_root().sounds |= soundids.swing_id
 
     jointDef = b2DistanceJointDef()
     jointDef.body1 = self.body
@@ -613,7 +626,7 @@ class Monkey(gameobject.GameObject):
     #
     # Here the monkey goes air bourne. This is expected behaviour
     # If the edge is very steep, however when going over slight bumps
-    # this is very bad. 
+    # this is very bad.
     #
     # The solution is to interperlate the angle force vector between
     # the current platfrom and the next platform
@@ -686,13 +699,13 @@ class Monkey(gameobject.GameObject):
 
     gamesprites.GameSprites.render_at_center(sprite_name, off, (1.6, 1.6), rot)
 
-    # Grab Arm 
+    # Grab Arm
     if self.grab_joint:
       grab_hand_pos = self.grab_joint.body2.position
     else:
       grab_hand_pos = b2Vec2(self.grab_hand_offset) + self.grab_shoulder_offset
       grab_hand_pos = self.GetWorldPoint(grab_hand_pos)
-    
+
     grab_shoulder_pos = self.GetWorldPoint(self.grab_shoulder_offset)
     grab_arm = grab_hand_pos - grab_shoulder_pos
     points = self._render_fatten_vector(grab_arm, 0.05)
@@ -724,7 +737,7 @@ class Monkey(gameobject.GameObject):
     unit = vector.copy()
     unit.Normalize()
     unit *= fatness
-    perp = (unit.y, -unit.x) 
+    perp = (unit.y, -unit.x)
 
     points = []
 
@@ -765,7 +778,7 @@ class Monkey(gameobject.GameObject):
     body_pos = foot_pos - self.foot_shape.localPosition
 
     # Remove velocity perpendicular to platform
-    perp_vel = b2Dot(self.platform_contact.normal, self.body.linearVelocity)   
+    perp_vel = b2Dot(self.platform_contact.normal, self.body.linearVelocity)
     perp_vel *= self.platform_contact.normal
 
     # Update the engine
@@ -804,7 +817,7 @@ class Monkey(gameobject.GameObject):
     """
     uprightness = self._uprightness(b2Vec2(0,1))
 
-    platform_dot = b2Dot(platform_contact.normal, b2Vec2(0,1)) 
+    platform_dot = b2Dot(platform_contact.normal, b2Vec2(0,1))
 
 #    print self, platform_contact.shape2.GetBody().userData, platform_dot
 #   print platform_contact
@@ -812,7 +825,7 @@ class Monkey(gameobject.GameObject):
     if platform_dot < 0.5:
       return False
 
-    
+
     score = uprightness * self.body.linearVelocity.Length()
 
     # Only consider score component perpendictular to the platform

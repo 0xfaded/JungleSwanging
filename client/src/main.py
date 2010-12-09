@@ -3,6 +3,8 @@ import sys
 import time
 import math
 
+import soundids
+
 import pygame
 from pygame.locals import *
 
@@ -62,14 +64,15 @@ glEnable(GL_BLEND)
 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 # Monkeys Imports
-import monkey 
-import grab 
-import world 
+
+import monkey
+import grab
+import world
 
 import spawnpoint
 
-import contactlistener 
-import server 
+import contactlistener
+import server
 
 import keymap
 
@@ -142,6 +145,8 @@ game_world.add_child(banana1, (5, 2))
 fps = 30
 active = True
 
+mainMusic = pygame.mixer.Sound('spin.ogg').play(-1)
+
 while active:
   delta_t = clock.tick(fps)
   server.Server.iterate()
@@ -210,7 +215,9 @@ while active:
 
   b2_world.Step(1.0/fps, 10, 8)
 
-  game_world.update_tree(delta_t) 
+  game_world.update_tree(delta_t)
+
+  game_world.play_sounds()
 
   msg = []
   game_world.tree_to_network(msg)
