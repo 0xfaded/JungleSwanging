@@ -24,9 +24,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.36914063"
-     inkscape:cx="1694.8436"
-     inkscape:cy="980.3631"
+     inkscape:zoom="0.125"
+     inkscape:cx="795.68642"
+     inkscape:cy="1451.8183"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -121,24 +121,6 @@
        y="-255.27916"
        class="platform" />
     <path
-       sodipodi:type="star"
-       style="fill:#ffff00"
-       id="path3153"
-       sodipodi:sides="5"
-       sodipodi:cx="1237.4443"
-       sodipodi:cy="735.82166"
-       sodipodi:r1="128.4989"
-       sodipodi:r2="64.249451"
-       sodipodi:arg1="2.0344439"
-       sodipodi:arg2="2.6627625"
-       inkscape:flatsided="false"
-       inkscape:rounded="0"
-       inkscape:randomized="0"
-       d="m 1179.9779,850.75457 0.4428,-85.33054 -70.0422,-48.73999 81.291,-25.94742 24.7103,-81.67558 49.7978,69.29416 85.3139,-1.73829 -50.5143,68.77356 28.0167,80.60125 -81.0173,-26.78976 z"
-       transform="matrix(0.59649805,0,0,0.59649805,429.07693,-1604.3567)"
-       inkscape:transform-center-x="3.8827885"
-       inkscape:transform-center-y="-3.5276281" />
-    <path
        sodipodi:type="arc"
        style="fill:#00ff00"
        id="path3155"
@@ -188,6 +170,67 @@
        width="43.343914"
        height="379.25925"
        x="1029.418"
-       y="-215.44737" />
+       y="-215.44737"
+       class="platform" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#ff0000"
+       id="path3263"
+       sodipodi:cx="1171.6403"
+       sodipodi:cy="857.18518"
+       sodipodi:rx="39.280422"
+       sodipodi:ry="29.798943"
+       d="m 1210.9207,857.18518 a 39.280422,29.798943 0 1 1 -78.5609,0 39.280422,29.798943 0 1 1 78.5609,0 z"
+       transform="translate(0,-1947.6378)"
+       objectid="12"
+       cooldown="3000" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#ff0000"
+       id="path3265"
+       sodipodi:cx="2380"
+       sodipodi:cy="1452"
+       sodipodi:rx="44"
+       sodipodi:ry="52"
+       d="m 2424,1452 a 44,52 0 1 1 -88,0 44,52 0 1 1 88,0 z"
+       transform="translate(0,-1947.6378)"
+       objectid="13"
+       cooldown="5000" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#ff0000"
+       id="path3267"
+       sodipodi:cx="144"
+       sodipodi:cy="1624"
+       sodipodi:rx="40"
+       sodipodi:ry="40"
+       d="m 184,1624 a 40,40 0 1 1 -80,0 40,40 0 1 1 80,0 z"
+       transform="translate(0,-1947.6378)"
+       objectid="11"
+       cooldown="11000" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#ff0000"
+       id="path3269"
+       sodipodi:cx="1168"
+       sodipodi:cy="1860"
+       sodipodi:rx="56"
+       sodipodi:ry="52"
+       d="m 1224,1860 a 56,52 0 1 1 -112,0 56,52 0 1 1 112,0 z"
+       transform="translate(0,-1947.6378)"
+       objectid="11"
+       cooldown="10000" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#ff0000"
+       id="path3271"
+       sodipodi:cx="2700"
+       sodipodi:cy="2220"
+       sodipodi:rx="116"
+       sodipodi:ry="84"
+       d="m 2816,2220 a 116,84 0 1 1 -232,0 116,84 0 1 1 232,0 z"
+       transform="translate(0,-1947.6378)"
+       objectid="12"
+       cooldown="5000" />
   </g>
 </svg>
