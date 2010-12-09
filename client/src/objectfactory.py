@@ -15,6 +15,8 @@ import beachballofdeath
 import orange
 import pinapplegrenade
 
+import spawnpoint
+
 import powerup
 
 import gameobject
@@ -54,6 +56,10 @@ class ObjectFactory(object):
     # PowerUps
     elif obj_id == powerup_id:
       ret = object.__new__(powerup.PowerUp)
+
+    # Permanant
+    elif obj_id == spawnpoint_id:
+      ret = object.__new__(spawnpoint.SpawnPoint)
 
     else:
       raise Exception('Undefiened objectid {0}'.format(obj_id))
@@ -95,6 +101,10 @@ class ObjectFactory(object):
     elif obj_id == powerup_id:
       ret = powerup.PowerUp
 
+    # Permanant
+    elif obj_id == spawnpoint_id:
+      ret = spawnpoint.SpawnPoint
+
     else:
       raise Exception('Undefiened objectid {0}'.format(obj_id))
 
@@ -132,6 +142,10 @@ class ObjectFactory(object):
     # PowerUps
     elif isinstance(obj, powerup.PowerUp):
       ret = powerup_id
+
+    # Permanant
+    elif isinstance(obj, spawnpoint.SpawnPoint):
+      return spawnpoint_id
 
     else:
       raise Exception('Undefiened object type {0}'.format(obj))

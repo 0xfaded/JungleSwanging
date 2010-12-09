@@ -158,7 +158,7 @@ def _handle_group(node, transform):
       p, r = _make_grab(child, transform)
       ret.append((grab.Grab(r.Length()), p))
 
-    elif klass == 'swawnpoint':
+    elif klass == 'spawnpoint':
       x = float(child.attributes['x'].value)
       y = float(child.attributes['y'].value)
       w = float(child.attributes['width'].value)

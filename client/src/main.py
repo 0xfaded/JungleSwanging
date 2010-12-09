@@ -11,6 +11,8 @@ from Box2D import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+import random
+
 # Temporary debugging stuff
 import gldebugdraw
 from settings import Settings
@@ -64,13 +66,14 @@ import monkey
 import grab 
 import world 
 
+import spawnpoint
+
 import contactlistener 
 import server 
 
 import keymap
 
-import pathfinder
-import beachballofdeath
+import spawnpoint
 
 # Set up Box2d World
 
@@ -117,19 +120,20 @@ game_world.set_root(b2_world, contact_listener)
 
 game_world.read(sys.argv[1])
 
+spawn1 = spawnpoint.SpawnPoint(b2Vec2(2,1.5))
+game_world.add_child(spawn1, (1,3))
 
 controller = keymap.KeyMap()
 
 monkey1   = monkey.Monkey(controller)
+monkey1.set_us(True)
 
+monkey2   = monkey.Monkey(keymap.KeyMap())
 
-game_world.add_child(monkey1, (2,5))
+server.Server.new_monkeys.append(monkey1)
+
 #game_world.add_child(monkey2, (6,8))
 #game_world.add_child(p, (2,10))
-
-def crop_angle(angle):
-  """Take an arbitary angle, and return that angle between pi and -pi"""
-  return ((abs(angle) + math.pi) % (2 * math.pi)) - math.pi
 
 fps = 30
 active = True
@@ -138,8 +142,14 @@ while active:
   delta_t = clock.tick(fps)
   server.Server.iterate()
 
+  spawnpoints = game_world.get_root().children_of_type(spawnpoint.SpawnPoint)
+  random.shuffle(spawnpoints)
+
   for new_monkey in server.Server.new_monkeys:
-    game_world.add_child(new_monkey, (8,10))
+    for s in spawnpoints:
+      if s.is_clear():
+        game_world.add_child(new_monkey, s.get_center())
+
   server.Server.new_monkeys = []
 
   for dead_monkey in server.Server.removed_monkeys:
