@@ -167,7 +167,8 @@ def _handle_group(node, transform):
 
       p = b2Vec2(x, y)
       s = b2Vec2(w, h)
-
+      
+      [p, s] = _apply_transform([p, r], transform)
       ret.append((spawnpoint.SpawnPoint(s), p))
 
     elif klass == 'powerup':
