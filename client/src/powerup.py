@@ -45,22 +45,30 @@ class PowerUp(gameobject.GameObject):
     self.destroyMe = False
 
   def to_network(self, msg):
-    msg.append(1)
+    msg.append(powerup_id)
     msg.append(self.body.position.x)
     msg.append(self.body.position.y)
-    msg.append(self.body.angle)
+    msg.append(self.radius)
+    msg.append(self.t)
+    msg.append(self.sprite_name)
 
   def from_network(self, msg):
     id    = msg.pop()
 
     x     = float(msg.pop())
     y     = float(msg.pop())
-    angle = float(msg.pop())
+
+    self.body = b2BodyDef()
+    self.body.position = b2Vec2(x, y)
+
+    self.radius = float(msg.pop())
+    self.t      = float(msg.pop())
+
+    self.sprite_name = msg.pop()
 
     # Use a dummy body as we dont run a simulation on the client
     dummy = b2BodyDef()
     dummy.position = b2Vec2(x,y)
-    dummy.angle    = angle
 
     # This is ugly, but for our purposes a BodyDef has
     # all the attributes required for rendering, and I'm in a rush

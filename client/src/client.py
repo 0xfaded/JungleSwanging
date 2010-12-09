@@ -12,7 +12,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 # Initialise Display and GL
-SCREEN_SIZE = (800, 600)
+SCREEN_SIZE = (1200, 800)
 
 pygame.init()
 screen = pygame.display.set_mode(SCREEN_SIZE, HWSURFACE|OPENGL|DOUBLEBUF)
@@ -112,54 +112,54 @@ sequence_number = 0
 
 keys = keymap.KeyMap()
 
-try:
-  while active:
-    delta_t = clock.tick(fps)
+#try:
+while active:
+  delta_t = clock.tick(fps)
 
-    msg = [sequence_number]
-    sequence_number += 1
+  msg = [sequence_number]
+  sequence_number += 1
 
-    keys.read_keys(pygame.key.get_pressed())
-    keys.to_network(msg)
+  keys.read_keys(pygame.key.get_pressed())
+  keys.to_network(msg)
 
-    msg = map(str, msg)
-    msg = ','.join(msg)
+  msg = map(str, msg)
+  msg = ','.join(msg)
 
-    client.transport.write(msg, (host, host_port))
+  client.transport.write(msg, (host, host_port))
 
-    reactor.iterate(0)
+  reactor.iterate(0)
 
-    if our_monkey == None:
-      continue
+  if our_monkey == None:
+    continue
 
-    events = []
-    for event in pygame.event.get():
-      events.append(event)
-  
-      if event.type == pygame.QUIT:
+  events = []
+  for event in pygame.event.get():
+    events.append(event)
+
+    if event.type == pygame.QUIT:
+      active = False
+    elif event.type == pygame.KEYDOWN:
+      if event.unicode == 'q':
         active = False
-      elif event.type == pygame.KEYDOWN:
-        if event.unicode == 'q':
-          active = False
 
-    # center camera on monkey
-    mx, my = our_monkey.body.position
-    glTranslate(-mx, -my, 0)
+  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+  glMatrixMode(GL_MODELVIEW)
+  glLoadIdentity()
 
-    glMatrixMode(GL_MODELVIEW)
-    glLoadIdentity()
+  zoom = 0.1
+  glScale(zoom, zoom, 1)
 
-    zoom = 0.1
-    glScale(zoom, zoom, 1)
+  # center camera on monkey
+  mx, my = our_monkey.body.position
+  glTranslate(-mx, -my, 0)
 
-    game_world.tree_render()
+  game_world.tree_render()
 
-    pygame.display.flip()
+  pygame.display.flip()
 
-except Exception as e:
-  print e
+#except Exception as e:
+  #print e
 
 reactor.fireSystemEvent('shutdown')
 pygame.quit()

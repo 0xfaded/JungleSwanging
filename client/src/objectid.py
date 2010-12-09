@@ -15,3 +15,5 @@ beachball_id  = 11
 # Effects
 abomb_id      = 21
 
+# Powerup
+powerup_id    = 31

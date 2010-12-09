@@ -31,7 +31,44 @@ class Parabola(object):
 
     glBegin(GL_LINE_STRIP)
     for t in xrange(20):
-      v = self(self.t_hit * (t/20.0))
+      t = self.t_hit * (t / 20.0)
+      v = self(t)
+      d1 = self.d(t)
+
+      glVertex3f(v.x, v.y, 0)
+
+    glEnd()
+
+    glBegin(GL_LINES)
+    for t in xrange(20):
+      t = self.t_hit * (t / 20.0)
+      v = self(t)
+      d1 = self.d(t)
+
+      glVertex3f(v.x, v.y, 0)
+
+      perp1 = b2Vec2(d1.y, -d1.x)
+      perp1.Normalize()
+      perp1 *= 0.6
+        
+      v -= perp1
+      glVertex3f(v.x, v.y, 0)
+
+    glEnd()
+
+    glBegin(GL_LINES)
+    for t in xrange(20):
+      t = self.t_hit * (t / 20.0)
+      v = self(t)
+      d1 = self.d(t)
+
+      glVertex3f(v.x, v.y, 0)
+
+      perp1 = b2Vec2(d1.y, -d1.x)
+      perp1.Normalize()
+      perp1 *= 0.6
+        
+      v += perp1
       glVertex3f(v.x, v.y, 0)
 
     glEnd()
@@ -39,44 +76,59 @@ class Parabola(object):
   def world_trace(self, world, target_body, source_body, clearance, step=0.1):
     t = 0
     seg = b2Segment()
-    while t <= self.t_hit - step:
+
+    while t <= self.t_hit:
+      # First do a cast along the path
       p1 = self(t)
       p2 = self(t+step)
 
-      d1 = self.d(t)
-      d2 = self.d(t+step)
-
-      perp1 = b2Vec2(d1.y, -d1.x)
-      perp1.Normalize()
-      perp1 *= clearance
-        
-      perp2 = b2Vec2(d2.y, -d2.x)
-      perp2.Normalize()
-      perp2 *= clearance
-        
-      # Box2d seems to raycast backwards
-      seg.p2 = p1 + perp1
-      seg.p1 = p2 + perp2
-
+      seg.p1 = p1
+      seg.p2 = p2
       (r, n, shape) = world.RaycastOne(seg, False, None)
 
-      if shape:
+      if shape and not shape.isSensor:
         body = shape.GetBody()
-        if body.this == target_body.this:
-          return True
-        elif body.this != source_body.this:
+        if body.this != source_body.this and body.this != target_body.this:
           return False
 
-      seg.p2 = p1 - perp1
-      seg.p1 = p2 - perp2
+      # Now do a perpendicular one to make sure we have the clearance
+
+      d = self.d(t)
+
+      perp = b2Vec2(d.y, -d.x)
+      perp.Normalize()
+      perp *= clearance
+        
+      seg.p1 = p1 + perp
+      seg.p2 = p1 - perp
+      (r, n, shape) = world.RaycastOne(seg, False, None)
+
+      if shape and not shape.isSensor:
+        body = shape.GetBody()
+        if body.this != source_body.this and body.this != target_body.this:
+          return False
+
+      # Do yet another cast, this time parallel to the path but spawning
+      # from the ends of the perpendicular cast
+      d_delta = p2 - p1
+      seg.p1 = p1 + perp
+      seg.p2 = p1 + perp + d_delta
 
       (r, n, shape) = world.RaycastOne(seg, False, None)
 
-      if shape:
+      if shape and not shape.isSensor:
         body = shape.GetBody()
-        if body.this == target_body.this:
-          return True
-        elif body.this != source_body.this:
+        if body.this != source_body.this and body.this != target_body.this:
+          return False
+
+      seg.p1 = p1 - perp
+      seg.p2 = p1 - perp + d_delta
+
+      (r, n, shape) = world.RaycastOne(seg, False, None)
+
+      if shape and not shape.isSensor:
+        body = shape.GetBody()
+        if body.this != source_body.this and body.this != target_body.this:
           return False
 
       t += step
@@ -104,7 +156,7 @@ class Parabola(object):
 
 
 def find_parabola(world, target_body, source_body,
-                  target, source, v0_max, clearance, step=0.05):
+                  target, source, v0_max, clearance, step=0.3):
   """
   Find a clear parabola in the world between the target and source
   """
