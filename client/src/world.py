@@ -112,6 +112,7 @@ class World(gameobject.GameObject):
 
   def render(self):
     if self.map_name != None:
+      #s = (self.size[0] * self.scale *2, self.size[1] * self.scale*2)
       s = (self.size[0] * self.scale, self.size[1] * self.scale)
       self.sprite.render_at('world', (0,0), s)
 

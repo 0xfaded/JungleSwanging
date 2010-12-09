@@ -53,7 +53,7 @@ class Monkey(gameobject.GameObject):
       self.ground_force_y       =  0 # Ground acceleration along the y axis
 
       self.ground_impulse_x     =  0
-      self.ground_impulse_y     = 10 # Best thought as jump
+      self.ground_impulse_y     =  10 # Best thought as jump
 
       self.air_force_x          =  0 # Air acceleration along the x axis
       self.air_force_y          =  0 # Air acceleration along the y axis
