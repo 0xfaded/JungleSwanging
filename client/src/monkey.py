@@ -279,7 +279,7 @@ class Monkey(gameobject.GameObject):
           impulse_basis += b2Vec2( 0, -1)
 
     # Prevent ourselves from getting stuck with our feet not touching a platform
-    if self.body.linearVelocity.Length() < 0.01 and not self.controlled:
+    if self.body.linearVelocity.Length() < 0.1:
       self.still_timer += delta_t
       if self.still_timer > self.right_after_ms_still:
         self.controlled = True

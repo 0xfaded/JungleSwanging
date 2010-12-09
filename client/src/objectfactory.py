@@ -62,6 +62,44 @@ class ObjectFactory(object):
 
     return ret
 
+  def get_constructor(self, obj_id):
+    # None item
+    if obj_id == null_id:
+      return None
+
+    # Core Objects
+    elif obj_id == monkey_id:
+      ret = monkey.Monkey
+    elif obj_id == platform_id:
+      ret = platform.Platform
+    elif obj_id == grab_id:
+      ret = grab.Grab
+    elif obj_id == world_id:
+      ret = world.World
+
+    # Projectiles
+    elif obj_id == beachball_id:
+      ret = beachballofdeath.BeachBallOfDeath
+    elif obj_id == pinapple_id:
+      ret = pinapplegrenade.PinappleGrenade
+    elif obj_id == orange_id:
+      ret = orange.Orange
+
+    # Effects
+    elif obj_id == abomb_id:
+      ret = abomb.ABomb
+    elif obj_id == burst_id:
+      ret = burst.Burst
+
+    # PowerUps
+    elif obj_id == powerup_id:
+      ret = powerup.PowerUp
+
+    else:
+      raise Exception('Undefiened objectid {0}'.format(obj_id))
+
+    return ret
+
   def to_id(self, obj):
     # None item
     if obj == None:

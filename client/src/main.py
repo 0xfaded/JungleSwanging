@@ -59,12 +59,9 @@ glClearColor(0,0,0,0)
 glEnable(GL_BLEND)
 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-print glGetInteger(GL_MAX_TEXTURE_SIZE)
-
 # Monkeys Imports
 import monkey 
 import grab 
-import powerup 
 import world 
 
 import contactlistener 
@@ -127,6 +124,8 @@ monkey1   = monkey.Monkey(controller)
 
 
 game_world.add_child(monkey1, (2,5))
+#game_world.add_child(monkey2, (6,8))
+#game_world.add_child(p, (2,10))
 
 def crop_angle(angle):
   """Take an arbitary angle, and return that angle between pi and -pi"""
