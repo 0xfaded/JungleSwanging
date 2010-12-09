@@ -162,11 +162,13 @@ class Monkey(gameobject.GameObject):
     msg.append(self.body.position.y)
     msg.append(self.body.angle)
 
-    if self.parabola:
-      msg.append(1)
-      self.parabola.to_network(msg)
-    else:
-      msg.append(0)
+#    if self.parabola:
+#      msg.append(1)
+#      self.parabola.to_network(msg)
+#    else:
+#      msg.append(0)
+#
+    msg.append(objectfactory.ObjectFactory.to_id(self.weapon))
 
     if self.grab_joint:
       msg.append(1)
@@ -175,6 +177,13 @@ class Monkey(gameobject.GameObject):
       msg.append(grab_point.y)
     else:
       msg.append(0)
+
+    tracking_id = objectfactory.ObjectFactory.to_id(self.tracking_weapon)
+    msg.append(tracking_id)
+    if tracking_id != 0:
+      tracking_point = self.tracking_weapon.body.position
+      msg.append(tracking_point.x)
+      msg.append(tracking_point.y)
 
   def from_network(self, msg):
     id    = msg.pop()
@@ -194,12 +203,19 @@ class Monkey(gameobject.GameObject):
     # all the attributes required for rendering, and I'm in a rush
     self.body = dummy
 
-    has_parabola = int(msg.pop())
-    if has_parabola == 1:
-      self.parabola = object.__new__(pathfinder.Parabola)
-      self.parabola.from_network(msg)
+#    has_parabola = int(msg.pop())
+#    if has_parabola == 1:
+#      self.parabola = object.__new__(pathfinder.Parabola)
+#      self.parabola.from_network(msg)
+#    else:
+#      self.parabola = None
+
+    weapon_id = int(msg.pop())
+    if weapon_id == null_id:
+      self.weapon = None
     else:
-      self.parabola = None
+      self.weapon = objectfactory.ObjectFactory.from_id(weapon_id)
+      self.weapon.__init__()
 
     has_grab = int(msg.pop())
     if has_grab == 1:
@@ -209,6 +225,15 @@ class Monkey(gameobject.GameObject):
       self.grab_joint = FakeDistanceJoint(b2Vec2(gx, gy))
     else:
       self.grab_joint = None
+
+    tracking_weapon_id = int(msg.pop())
+    if tracking_weapon_id == null_id:
+      self.tracking_weapon = None
+    else:
+      tx = float(msg.pop())
+      ty = float(msg.pop())
+
+      self.tracking_weapon = b2Vec2(tx, ty)
 
   def update(self, delta_t):
     keys, events = self.controller.active, self.controller.events
@@ -337,8 +362,6 @@ class Monkey(gameobject.GameObject):
   def apply_impulse(self, impulse, offset):
     max_impulse = self.stats.max_knock_impulse
 
-    print impulse.Length()
-
     if impulse.LengthSquared() > max_impulse * max_impulse:
       self.controlled = False
 
@@ -372,8 +395,10 @@ class Monkey(gameobject.GameObject):
       target_pos  = target.body.position
       target_body = target.body
 
+      clearance = self.weapon.radius + 0.05
       parabola = pathfinder.find_parabola(self.world, target_body, source_body,
-                                          target_pos, source_pos, v0_max, 0.4)
+                                          target_pos, source_pos, v0_max,
+                                          clearance)
 
       if parabola:
         break
@@ -618,9 +643,6 @@ class Monkey(gameobject.GameObject):
     return force
 
   def render(self):
-    if self.parabola:
-      self.parabola.plot()
-
     # Calculate rendering coords
     rot = self.body.angle
     off = self.body.position
@@ -644,7 +666,10 @@ class Monkey(gameobject.GameObject):
 
     # Item Arm
     if self.tracking_weapon:
-      item_hand_pos = self.tracking_weapon.body.position
+      if isinstance(self.tracking_weapon, b2Vec2):
+        item_hand_pos = self.tracking_weapon
+      else:
+        item_hand_pos = self.tracking_weapon.body.position
     else:
       item_hand_pos = b2Vec2(self.item_hand_offset) + self.item_shoulder_offset
       item_hand_pos = self.GetWorldPoint(item_hand_pos)
@@ -767,3 +792,5 @@ class FakeDistanceJoint(object):
   def __init__(self, position):
     self.body2 = FakeDistanceJoint.FakeBody(position)
 
+# Have to import this after Monkey is already defined
+import objectfactory

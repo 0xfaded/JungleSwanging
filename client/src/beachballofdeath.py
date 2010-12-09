@@ -15,9 +15,16 @@ import monkey
 
 class BeachBallOfDeath(projectile.Projectile):
   max_bounces = 5
+  radius = 0.5
+  sprite_name = 'beachball'
+  mass = 1
+  friction = 0.1
+  restitution = 0.8
 
   def __init__(self):
-    super(BeachBallOfDeath, self).__init__(0.5, 1, 'beachball', 0.1, 0.8);
+    super(BeachBallOfDeath, self).__init__(self.radius, self.mass,
+                                           self.sprite_name,
+                                           self.friction, self.restitution)
     self.bounces = 0
 
   def add_to_world(self, at):
@@ -60,5 +67,4 @@ class BeachBallOfDeath(projectile.Projectile):
     id    = msg.pop()
     super(BeachBallOfDeath, self).from_network(msg)
 
-    self.radius = 0.5
 

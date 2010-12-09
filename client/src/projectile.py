@@ -54,6 +54,10 @@ class Projectile(gameobject.GameObject):
   def watch_parent(self, contact):
     self.parent_contact = True
 
+  def kill_me(self):
+    self.parent.tracking_weapon = None
+    super(Projectile, self).kill_me();
+
   def update(self, delta_t):
     # Do we still collide with the monkey? If not, allow the projectile
     # to collide with its parent again

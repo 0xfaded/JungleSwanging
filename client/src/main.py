@@ -1,6 +1,7 @@
 # vim:set sw=2 ts=2 sts=2 et:
 import sys
 import time
+import math
 
 import pygame
 from pygame.locals import *
