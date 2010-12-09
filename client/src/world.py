@@ -547,8 +547,8 @@ def _parse_transform_matrix(tokens):
 
   xform = b2XForm()
 
-  xform.R.col1.x, xform.R.col1.y = a,c
-  xform.R.col2.x, xform.R.col2.y = b,d
+  xform.R.col1.x, xform.R.col2.x = a,c
+  xform.R.col1.y, xform.R.col2.y = b,d
 
   xform.position.x, xform.position.y = x,y
 
