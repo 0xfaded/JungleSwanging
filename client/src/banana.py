@@ -41,7 +41,7 @@ class Banana(gameobject.GameObject):
     self.add_callback(self.on_touch, 'Live', self.body, monkey.Monkey)
 
   def to_network(self, msg):
-    msg.append(powerup_id)
+    msg.append(banana_id)
     msg.append(self.body.position.x)
     msg.append(self.body.position.y)
     msg.append(self.radius)

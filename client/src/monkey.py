@@ -131,6 +131,7 @@ class Monkey(gameobject.GameObject):
 
     self.state = 'none'
 
+    self.target_pos = None
 
     self.is_us = False
 
@@ -218,8 +219,12 @@ class Monkey(gameobject.GameObject):
       msg.append(tracking_point.x)
       msg.append(tracking_point.y)
 
-#    msg.append(self.sounds)
-#    self.sounds = 0
+    if target_pos:
+      msg.append(1)
+      msg.append(target_pos.x)
+      msg.append(target_pos.a)
+    else:
+      msg.append(0)
 
   def from_network(self, msg):
     self.is_us = False
@@ -272,6 +277,12 @@ class Monkey(gameobject.GameObject):
       ty = float(msg.pop())
 
       self.tracking_weapon = b2Vec2(tx, ty)
+
+    has_target_pos = int(msg.pop())
+    if has_target_posmsg.pop()
+      tx = float(msg.pop())
+      ty = float(msg.pop())
+      self.target_pos = b2Vec2(tx, ty)
 
   def update(self, delta_t):
     keys, events = self.controller.active, self.controller.events
@@ -428,11 +439,11 @@ class Monkey(gameobject.GameObject):
     v0_max = self.weapon.max_velocity_from_max_impulse(10)
 
     parabola = None
+    self.target_pos = None
     for target in targets:
       if target is self:
         continue
 
-      target_pos  = target.body.position
       target_body = target.body
 
       clearance = self.weapon.radius + 0.05
@@ -441,6 +452,7 @@ class Monkey(gameobject.GameObject):
                                           clearance)
 
       if parabola:
+        self.target_pos = target.body.position
         break
 
     self.parabola = parabola
@@ -732,6 +744,11 @@ class Monkey(gameobject.GameObject):
 
     if self.weapon:
       self.weapon.render(item_hand_pos, rot)
+
+  def render_target(self):
+    if self.target_pos:
+      gamesprites.GameSprites.render_at_center('target', self.target_pos, (1, 1), rot)
+
 
   def _render_fatten_vector(self, vector, fatness):
     unit = vector.copy()

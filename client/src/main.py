@@ -124,28 +124,26 @@ game_world.set_root(b2_world, contact_listener)
 
 game_world.read(sys.argv[1])
 
-#spawn1 = spawnpoint.SpawnPoint(b2Vec2(2,1.5))
-#game_world.add_child(spawn1, (1,3))
+spawn1 = spawnpoint.SpawnPoint(b2Vec2(2,1.5))
+game_world.add_child(spawn1, (1,3))
 
 controller = keymap.KeyMap()
 
 monkey1   = monkey.Monkey(controller)
 monkey1.set_us(True)
 
-monkey2   = monkey.Monkey(keymap.KeyMap())
+#monkey2   = monkey.Monkey(keymap.KeyMap())
 
 server.Server.new_monkeys.append(monkey1)
 
-banana1 = banana.Banana(1)
+#banana1 = banana.Banana(1)
 
-game_world.add_child(banana1, (5, 2))
+#game_world.add_child(banana1, (5, 2))
 #game_world.add_child(monkey2, (6,8))
 #game_world.add_child(p, (2,10))
 
 fps = 30
 active = True
-
-mainMusic = pygame.mixer.Sound('spin.ogg').play(-1)
 
 while active:
   delta_t = clock.tick(fps)

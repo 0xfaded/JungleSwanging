@@ -24,4 +24,5 @@ powerup_id    = 31
 # Permanent Objects
 fan_id        = 41
 spawnpoint_id = 42
+banana_id     = 43
 

@@ -221,6 +221,9 @@ class Main_Menu(object):
                                 client = Client(self.host, self.host_port,
                                                 self.client_port)
                                 client.run()
+
+                                menu_music.play(-1)
+
                             elif menu_item == 1:
                                 menu_page = 2
                                 self.mm = False
@@ -303,6 +306,8 @@ class Client(object):
 
     import keymap
 
+    pygame.mixer.Sound('spin.ogg').play(-1)
+
     game_world = objectfactory.ObjectFactory.from_id(objectid.world_id)
 
     client_proto = ClientProtocol(game_world)
@@ -361,12 +366,14 @@ class Client(object):
         glTranslate(-mx, -my, 0)
 
         game_world.tree_render()
+        game_world.play_sounds()
 
         pygame.display.flip()
 
     except Exception as e:
       print e
 
+    pygame.mixer.stop()
     reactor.fireSystemEvent('shutdown')
 
 

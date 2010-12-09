@@ -67,7 +67,6 @@ class World(gameobject.GameObject):
       pygame.mixer.Sound('accept.wav').play()
     if self.sounds & cancel_id:
       pygame.mixer.Sound('cancel.wav').play()
-    self.sounds = 0
 
 
   def to_network(self, msg):
@@ -84,6 +83,7 @@ class World(gameobject.GameObject):
     map_name = msg.pop()
     width    = int(msg.pop())
     height   = int(msg.pop())
+
     self.sounds = int(msg.pop())
 
     if map_name != self.map_name:

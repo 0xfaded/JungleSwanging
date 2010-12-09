@@ -18,7 +18,7 @@ class GameSprites(pngspritesheet.PNGSpriteSheet):
     self.add_sprite('burst', 'burst.svg', (0, 614), (112, 103))
 
     self.add_sprite('tent', 'tent.svg', (590,0), (401,402))
-	self.add_sprite('crosshair', 'crosshair.svg', (0, 824), (154, 154))
+    self.add_sprite('crosshair', 'crosshair.svg', (0, 824), (154, 154))
 
     self.set_texture()
 

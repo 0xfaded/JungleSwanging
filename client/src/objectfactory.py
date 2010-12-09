@@ -16,6 +16,7 @@ import orange
 import pinapplegrenade
 
 import spawnpoint
+import banana
 
 import powerup
 
@@ -60,6 +61,8 @@ class ObjectFactory(object):
     # Permanant
     elif obj_id == spawnpoint_id:
       ret = object.__new__(spawnpoint.SpawnPoint)
+    elif obj_id == banana_id:
+      ret = object.__new__(banana.Banana)
 
     else:
       raise Exception('Undefiened objectid {0}'.format(obj_id))
