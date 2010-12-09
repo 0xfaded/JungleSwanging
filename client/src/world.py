@@ -104,7 +104,6 @@ class World(gameobject.GameObject):
     self.load_sprite(path)
 
   def load_sprite(self, path):
-    return
     s = (b2NextPowerOfTwo(self.size[0]), b2NextPowerOfTwo(self.size[1]))
 
     self.sprite = pngspritesheet.PNGSpriteSheet(self.map_name + '.png')
@@ -112,7 +111,6 @@ class World(gameobject.GameObject):
     self.sprite.set_texture()
 
   def render(self):
-    return
     if self.map_name != None:
       s = (self.size[0] * self.scale, self.size[1] * self.scale)
       self.sprite.render_at('world', (0,0), s)
