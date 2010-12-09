@@ -34,7 +34,7 @@
      inkscape:window-height="752"
      inkscape:window-x="0"
      inkscape:window-y="0"
-     inkscape:window-maximized="0" />
+     inkscape:window-maximized="1" />
   <metadata
      id="metadata3175">
     <rdf:RDF>
@@ -43,7 +43,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -117,61 +117,6 @@
        x="-11.428572"
        y="-1439.0664"
        class="platform" />
-    <path
-       sodipodi:type="arc"
-       style="fill:#000000"
-       id="path3194"
-       sodipodi:cx="3662.8572"
-       sodipodi:cy="2108.5715"
-       sodipodi:rx="228.57143"
-       sodipodi:ry="217.14285"
-       d="m 3891.4286,2108.5715 a 228.57143,217.14285 0 1 1 -457.1428,0 228.57143,217.14285 0 1 1 457.1428,0 z"
-       transform="matrix(1.3125,0,0,1.381579,-1244.6429,-2955.1195)"
-       class="grab" />
-    <path
-       sodipodi:type="arc"
-       style="fill:#000000"
-       id="path3196"
-       sodipodi:cx="408.57144"
-       sodipodi:cy="1368.5714"
-       sodipodi:rx="254.28572"
-       sodipodi:ry="265.71429"
-       d="m 662.85716,1368.5714 a 254.28572,265.71429 0 1 1 -508.57144,0 254.28572,265.71429 0 1 1 508.57144,0 z"
-       transform="matrix(1.1797753,0,0,1.1290322,-96.308183,-2215.6561)"
-       class="grab" />
-    <path
-       sodipodi:type="arc"
-       style="fill:#000000"
-       id="path3198"
-       sodipodi:cx="3668.5715"
-       sodipodi:cy="891.42859"
-       sodipodi:rx="228.57143"
-       sodipodi:ry="285.71429"
-       d="m 3897.143,891.42859 a 228.57143,285.71429 0 1 1 -457.1429,0 228.57143,285.71429 0 1 1 457.1429,0 z"
-       transform="matrix(1.3125,0,0,1.05,-1200.7144,-2183.6378)"
-       class="grab" />
-    <path
-       sodipodi:type="arc"
-       style="fill:#000000"
-       id="path3200"
-       sodipodi:cx="2142.8572"
-       sodipodi:cy="1225.7142"
-       sodipodi:rx="240"
-       sodipodi:ry="208.57143"
-       d="m 2382.8572,1225.7142 a 240,208.57143 0 1 1 -480,0 240,208.57143 0 1 1 480,0 z"
-       transform="matrix(1.25,0,0,1.4383562,-1430.0001,-3353.5086)"
-       class="grab" />
-    <path
-       sodipodi:type="arc"
-       style="fill:#000000"
-       id="path3202"
-       sodipodi:cx="1837.1428"
-       sodipodi:cy="1862.8572"
-       sodipodi:rx="322.85715"
-       sodipodi:ry="320"
-       d="m 2160,1862.8572 a 322.85715,320 0 1 1 -645.7143,0 322.85715,320 0 1 1 645.7143,0 z"
-       transform="translate(348.57143,-2890.4949)"
-       class="grab" />
     <rect
        style="fill:#00ff00"
        id="rect3243"
@@ -196,8 +141,9 @@
        sodipodi:ry="40"
        d="m 582.85715,2862.8572 a 37.142857,40 0 1 1 -74.28571,0 37.142857,40 0 1 1 74.28571,0 z"
        transform="translate(0,-1947.6378)"
-       objectid="11"
-       cooldown="5000" />
+       cooldown="5000"
+       class="powerup"
+       obj_id="11" />
     <path
        sodipodi:type="arc"
        style="fill:#ff0000"
@@ -208,8 +154,9 @@
        sodipodi:ry="31.428572"
        d="m 1914.2857,2842.8572 a 37.142857,31.428572 0 1 1 -74.2857,0 37.142857,31.428572 0 1 1 74.2857,0 z"
        transform="translate(0,-1947.6378)"
-       objectid="12"
-       cooldown="5000" />
+       cooldown="5000"
+       class="powerup"
+       obj_id="12" />
     <path
        sodipodi:type="arc"
        style="fill:#ff0000"
@@ -220,8 +167,9 @@
        sodipodi:ry="20"
        d="m 2840,2842.8572 a 17.142857,20 0 1 1 -34.2857,0 17.142857,20 0 1 1 34.2857,0 z"
        transform="translate(0,-1947.6378)"
-       objectid="12"
-       cooldown="5000" />
+       cooldown="5000"
+       obj_id="12"
+       class="powerup" />
     <path
        sodipodi:type="arc"
        style="fill:#ff0000"
@@ -232,8 +180,9 @@
        sodipodi:ry="42.857143"
        d="m 2765.7144,1802.8572 a 37.142857,42.857143 0 1 1 -74.2857,0 37.142857,42.857143 0 1 1 74.2857,0 z"
        transform="translate(0,-1947.6378)"
-       objectid="13"
-       cooldown="2000" />
+       cooldown="2000"
+       class="powerup"
+       obj_id="13" />
     <path
        sodipodi:type="arc"
        style="fill:#ff0000"
@@ -244,8 +193,9 @@
        sodipodi:ry="37.142857"
        d="m 1045.7143,1762.8572 a 60,37.142857 0 1 1 -120.00001,0 60,37.142857 0 1 1 120.00001,0 z"
        transform="translate(0,-1947.6378)"
-       objectid="13"
-       cooldown="2000" />
+       cooldown="2000"
+       class="powerup"
+       obj_id="13" />
     <path
        sodipodi:type="arc"
        style="fill:#ff0000"
@@ -256,8 +206,9 @@
        sodipodi:ry="37.142857"
        d="m 1074.2857,1197.1428 a 57.142857,37.142857 0 1 1 -114.28567,0 57.142857,37.142857 0 1 1 114.28567,0 z"
        transform="translate(0,-1947.6378)"
-       objectid="11"
-       cooldown="10000" />
+       cooldown="10000"
+       obj_id="11"
+       class="powerup" />
     <path
        sodipodi:type="arc"
        style="fill:#ff0000"
@@ -268,7 +219,80 @@
        sodipodi:ry="45.714287"
        d="m 2777.1428,1222.8572 a 40,45.714287 0 1 1 -80,0 40,45.714287 0 1 1 80,0 z"
        transform="translate(0,-1947.6378)"
-       objectid="11"
-       cooldown="10000" />
+       cooldown="10000"
+       obj_id="11"
+       class="powerup" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#00ff00"
+       id="path3004"
+       sodipodi:cx="2351.4285"
+       sodipodi:cy="2345.7144"
+       sodipodi:rx="174.28572"
+       sodipodi:ry="225.71428"
+       d="m 2525.7142,2345.7144 a 174.28572,225.71428 0 1 1 -348.5715,0 174.28572,225.71428 0 1 1 348.5715,0 z"
+       transform="matrix(1.7213114,0,0,1.329114,-3667.5408,-3788.2166)" />
+    <path
+       transform="matrix(1.7213114,0,0,1.329114,-3667.5408,-3788.2166)"
+       d="m 2525.7142,2345.7144 a 174.28572,225.71428 0 1 1 -348.5715,0 174.28572,225.71428 0 1 1 348.5715,0 z"
+       sodipodi:ry="225.71428"
+       sodipodi:rx="174.28572"
+       sodipodi:cy="2345.7144"
+       sodipodi:cx="2351.4285"
+       id="path3028"
+       style="fill:#00ff00"
+       sodipodi:type="arc"
+       class="grab" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#00ff00"
+       id="path3052"
+       sodipodi:cx="2257.1428"
+       sodipodi:cy="2528.5715"
+       sodipodi:rx="274.28571"
+       sodipodi:ry="214.28572"
+       d="m 2531.4285,2528.5715 a 274.28571,214.28572 0 1 1 -548.5714,0 274.28571,214.28572 0 1 1 548.5714,0 z"
+       transform="matrix(1.09375,0,0,1.4,1111.2499,-3581.9235)"
+       class="grab" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#00ff00"
+       id="path3054"
+       sodipodi:cx="3611.4285"
+       sodipodi:cy="722.85712"
+       sodipodi:rx="217.14285"
+       sodipodi:ry="191.42857"
+       d="m 3828.5713,722.85712 a 217.14285,191.42857 0 1 1 -434.2857,0 217.14285,191.42857 0 1 1 434.2857,0 z"
+       transform="matrix(1.381579,0,0,1.5671642,-1323.7594,-2409.045)"
+       class="grab" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#00ff00"
+       id="path3056"
+       sodipodi:cx="1237.1428"
+       sodipodi:cy="342.85715"
+       sodipodi:rx="237.14285"
+       sodipodi:ry="137.14285"
+       d="m 1474.2857,342.85715 a 237.14285,137.14285 0 1 1 -474.28573,0 237.14285,137.14285 0 1 1 474.28573,0 z"
+       transform="matrix(1.2650603,0,0,2.1875001,-333.63169,-2386.2092)"
+       class="grab" />
+    <rect
+       style="fill:#ff0000"
+       id="rect3058"
+       width="194.28572"
+       height="251.42857"
+       x="108.57143"
+       y="2742.8572"
+       transform="translate(0,-1947.6378)"
+       class="spawnpoint" />
+    <rect
+       style="fill:#ff0000"
+       id="rect3060"
+       width="182.85715"
+       height="234.28572"
+       x="2314.2856"
+       y="2760"
+       transform="translate(0,-1947.6378)"
+       class="spawnpoint" />
   </g>
 </svg>
