@@ -149,6 +149,7 @@ while active:
     for s in spawnpoints:
       if s.is_clear():
         game_world.add_child(new_monkey, s.get_center())
+        break
 
   server.Server.new_monkeys = []
 
