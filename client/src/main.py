@@ -136,9 +136,9 @@ monkey2   = monkey.Monkey(keymap.KeyMap())
 
 server.Server.new_monkeys.append(monkey1)
 
-banana1 = banana.Banana(1)
+#banana1 = banana.Banana(1)
 
-game_world.add_child(banana1, (5, 2))
+#game_world.add_child(banana1, (5, 2))
 #game_world.add_child(monkey2, (6,8))
 #game_world.add_child(p, (2,10))
 

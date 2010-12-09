@@ -7,7 +7,7 @@ class GameSprites(pngspritesheet.PNGSpriteSheet):
     #super(GameSprites, self).__init__((1024,1024))
     super(GameSprites, self).__init__('gamesprites.png')
     self.add_sprite('monkey', 'monkey.svg', (0, 0), (203, 204))
-    self.add_sprite('monkey2', 'monkey2.svg', (210, 0), (203, 297))
+    self.add_sprite('monkey2', 'monkey2.svg', (210, 0), (203, 197))
     self.add_sprite('monkey_arm', 'monkey_arm.svg', (0, 214), (105, 22))
     self.add_sprite('beachball', 'beachball.svg', (0, 244), (104, 104))
     self.add_sprite('abomb', 'abomb.svg', (420, 0), (164, 205))
@@ -18,7 +18,7 @@ class GameSprites(pngspritesheet.PNGSpriteSheet):
     self.add_sprite('burst', 'burst.svg', (0, 614), (112, 103))
 
     self.add_sprite('tent', 'tent.svg', (590,0), (401,402))
-	self.add_sprite('crosshair', 'crosshair.svg', (0, 824), (154, 154))
+    self.add_sprite('crosshair', 'crosshair.svg', (0, 824), (154, 154))
 
     self.set_texture()
 
