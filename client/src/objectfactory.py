@@ -8,8 +8,12 @@ import world
 import monkey
 import platform
 
-import beachballofdeath
 import abomb
+import burst
+
+import beachballofdeath
+import orange
+import pinapplegrenade
 
 import powerup
 
@@ -36,10 +40,16 @@ class ObjectFactory(object):
     # Projectiles
     elif obj_id == beachball_id:
       ret = object.__new__(beachballofdeath.BeachBallOfDeath)
+    elif obj_id == pinapple_id:
+      ret = object.__new__(pinapplegrenade.PinappleGrenade)
+    elif obj_id == orange_id:
+      ret = object.__new__(orange.Orange)
 
     # Effects
     elif obj_id == abomb_id:
       ret = object.__new__(abomb.ABomb)
+    elif obj_id == burst_id:
+      ret = object.__new__(burst.Burst)
 
     # PowerUps
     elif obj_id == powerup_id:
@@ -70,10 +80,16 @@ class ObjectFactory(object):
     # Projectiles
     elif isinstance(obj, beachballofdeath.BeachBallOfDeath):
       ret = beachball_id
+    elif isinstance(obj, pinapplegrenade.PinappleGrenade):
+      ret = pinapple_id
+    elif isinstance(obj, orange.Orange):
+      ret = orange_id
 
     # Effects
     elif isinstance(obj, abomb.ABomb):
       ret = abomb_id
+    elif isinstance(obj, burst.Burst):
+      ret = burst_id
 
     # PowerUps
     elif isinstance(obj, powerup.PowerUp):

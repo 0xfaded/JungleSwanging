@@ -124,7 +124,12 @@ game_world.read(sys.argv[1])
 controller = keymap.KeyMap()
 
 monkey1   = monkey.Monkey(controller)
-#monkey2   = monkey.Monkey(keymap.KeyMap())
+monkey2   = monkey.Monkey(keymap.KeyMap())
+
+import pinapplegrenade
+import orange
+p1 = powerup.PowerUp(0.2, 3000, 'pinapple', pinapplegrenade.PinappleGrenade)
+p2 = powerup.PowerUp(0.4, 3000, 'orange', orange.Orange)
 
 p = powerup.PowerUp(0.5, 3000, 'beachball')
 game_world.add_child(monkey1, (2,5))

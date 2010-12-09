@@ -15,8 +15,10 @@ from objectid import *
 
 class PowerUp(gameobject.GameObject):
 
-  def __init__(self, radius, cooldown, sprite_name):
+  def __init__(self, radius, cooldown, sprite_name, weapon):
     super(PowerUp, self).__init__()
+
+    self.weapon = weapon
 
     self.circleDef = b2CircleDef()
     self.circleDef.radius = radius
@@ -86,7 +88,7 @@ class PowerUp(gameobject.GameObject):
 
   def update_monkey(self, contact):
     monk = contact.shape2.GetBody().userData
-    monk.set_weapon(beachballofdeath.BeachBallOfDeath())
+    monk.set_weapon(self.weapon())
 
   def render(self):
     if self.t >= 0:
