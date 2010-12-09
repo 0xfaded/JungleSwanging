@@ -128,6 +128,11 @@ class Monkey(gameobject.GameObject):
 
     self.state = 'none'
 
+    self.is_us = False
+
+  def set_us(self, is_us):
+    self.is_us = is_us
+
   def add_to_world(self, at):
     self.bodyDef.position = at
     self.body = self.world.CreateBody(self.bodyDef)
@@ -186,6 +191,8 @@ class Monkey(gameobject.GameObject):
       msg.append(tracking_point.y)
 
   def from_network(self, msg):
+    self.is_us = False
+
     id    = msg.pop()
 
     self.player_id = int(msg.pop())
@@ -648,7 +655,12 @@ class Monkey(gameobject.GameObject):
     off = self.body.position
 
     # Body
-    gamesprites.GameSprites.render_at_center('monkey', off, (1.6, 1.6), rot)
+    if self.is_us:
+      sprite_name = 'monkey2'
+    else:
+      sprite_name = 'monkey'
+
+    gamesprites.GameSprites.render_at_center(sprite_name, off, (1.6, 1.6), rot)
 
     # Grab Arm 
     if self.grab_joint:
