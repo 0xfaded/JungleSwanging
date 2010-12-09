@@ -10,6 +10,7 @@ import platform
 import powerup
 import grab
 import monkey
+import spawnpoint
 
 import pngspritesheet
 
@@ -163,6 +164,11 @@ def _handle_group(node, transform):
       y = float(child.attributes['y'].value)
       w = float(child.attributes['width'].value)
       h = float(child.attributes['height'].value)
+
+      p = b2Vec2(x, y)
+      s = b2Vec2(w, h)
+
+      ret.append((spawnpoint.SpawnPoint(s), p))
 
     elif klass == 'powerup':
       p, r = _make_grab(child, transform)
